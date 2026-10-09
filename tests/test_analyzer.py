@@ -91,7 +91,7 @@ class TestAnalyze(unittest.TestCase):
         self.assertLessEqual(a.score, 20.0)
 
     def test_benchmark_separation(self):
-        """基准集上 AI 与人类文本必须拉开差距（准确率 100% @ 阈值 40）。"""
+        """基准集分层考核：典型AI>=40、隐蔽AI>=25（灰区）、人类<40。"""
         import os
         import sys
 
@@ -99,11 +99,13 @@ class TestAnalyze(unittest.TestCase):
             0,
             os.path.join(os.path.dirname(__file__), "..", "benchmark"),
         )
-        from samples import AI_SAMPLES, HUMAN_SAMPLES  # noqa
+        from samples import AI_SAMPLES, HUMAN_SAMPLES, SUBTLE_AI_SAMPLES  # noqa
 
         ai_scores = [analyze(t).score for t in AI_SAMPLES]
+        subtle_scores = [analyze(t).score for t in SUBTLE_AI_SAMPLES]
         human_scores = [analyze(t).score for t in HUMAN_SAMPLES]
-        self.assertTrue(all(s >= 40.0 for s in ai_scores), f"AI 分数偏低: {ai_scores}")
+        self.assertTrue(all(s >= 40.0 for s in ai_scores), f"典型AI分数偏低: {ai_scores}")
+        self.assertTrue(all(s >= 25.0 for s in subtle_scores), f"隐蔽AI未进灰区: {subtle_scores}")
         self.assertTrue(all(s < 40.0 for s in human_scores), f"人类分数偏高: {human_scores}")
         self.assertGreater(min(ai_scores) - max(human_scores), 20.0)
 
@@ -153,6 +155,60 @@ class TestAnalyze(unittest.TestCase):
         kinds = {s.kind for s in a.human_signals}
         self.assertIn("破折号/波浪号", kinds)
         self.assertIn("问句", kinds)
+
+    def test_single_cliche_not_dominant(self):
+        """单个 AI 高频词不该主导总分（v0.4 校准：放大系数 14 -> 4.5）。"""
+        text = (
+            "I think this detail is crucial for our plan. "
+            "We talked about it for hours in the library yesterday afternoon. "
+            "Everyone shared their own thoughts, some short, some quite long and winding. "
+            "In the end we just went with the simplest option."
+        )
+        a = analyze(text)
+        self.assertLess(a.stats["cliche_points"], 20.0,
+                        f"单个 crucial 不应给出 {a.stats['cliche_points']} 分")
+        self.assertLess(a.score, 40.0, f"单个命中不该判 AI，实际 {a.score}")
+
+    def test_correlative_pairs(self):
+        """虽然…但是… + 不仅…而且… 两组对仗 -> 加分。"""
+        text = (
+            "虽然这个问题看起来复杂，但是它的影响范围其实有限。"
+            "我们不仅要关注眼前的进度，而且要照顾长期的维护成本。"
+            "团队的节奏总体稳定，各项任务都在按计划推进，"
+            "后续还需要持续观察实际运行中的表现。"
+        )
+        a = analyze(text)
+        self.assertGreaterEqual(a.stats["pair_points"], 3.0)
+        self.assertGreaterEqual(a.stats["pair_count"], 2)
+
+    def test_single_pair_no_points(self):
+        """单独一组对仗是正常用法，不加分。"""
+        a = analyze(HUMAN_ZH_TEXT)
+        self.assertEqual(a.stats["pair_points"], 0)
+
+    def test_generic_points(self):
+        """长文本没有一个数字/引用/专有名词 -> 空泛加分；有数字则不加。"""
+        abstract = (
+            "这种方法的优势在于能够适应不同的场景与需求。"
+            "通过合理的安排与持续的调整，整体的效果会逐步显现。"
+            "与此同时，各个参与方之间的配合也会更加顺畅，"
+            "最终形成一种相对稳定的运行状态。"
+        ) * 2
+        a1 = analyze(abstract)
+        self.assertGreater(a1.stats["generic_points"], 0)
+        concrete = abstract + "2024 年我们实测了 3 次。"
+        a2 = analyze(concrete)
+        self.assertEqual(a2.stats["generic_points"], 0)
+
+    def test_filler_and_personal_signals(self):
+        text = (
+            "我妈昨天又催我相亲了，然后我就随便应付了两句。"
+            "反正那个男生我也不认识，就是我同学的朋友，话说见一面也没啥。"
+        )
+        a = analyze(text)
+        kinds = {s.kind for s in a.human_signals}
+        self.assertIn("口头禅/填充词", kinds)
+        self.assertIn("私人指称", kinds)
 
 
 if __name__ == "__main__":

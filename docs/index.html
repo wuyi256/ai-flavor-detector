@@ -307,10 +307,25 @@ const CLICHES = [
 ["成为了人们关注的焦点","zh","template",2.5,"同上"],
 ["带来了前所未有的","zh","template",2.5,"「前所未有」先证明"],
 ["深刻改变","zh","template",2,"说清改变了什么"],
+["this is why","en","template",1.5,"换成 so / that's why"],
+["at its core","en","template",2,"直接说本质是什么"],
+["in essence","en","template",2,"删掉通常不影响意思"],
+["essentially","en","buzzword",1.5,"AI 高频缓冲词"],
+["ultimately","en","connector",1.5,"AI 收尾标配"],
+["by doing so","en","template",1.5,"换成 so / then"],
+["in doing so","en","template",1.5,"同上"],
+["not only","en","connector",1,"和 but also 成对出现时加分"],
+["本质上","zh","template",2,"AI 爱用「本质上是一种…」下定义"],
+["受到关注","zh","buzzword",1.5,"谁关注？说具体"],
+["从这个角度看","zh","template",1.5,"换成「所以」或删掉"],
+["不可否认的是","zh","template",2,"AI 开场常见让步"],
+["可以说","zh","template",1.5,"AI hedging，直接说"],
+["换句话说","zh","template",1,"偶尔用没事，连用注意"],
 ];
 
 const MIN_UNITS=30, OPEN_WINDOW=60, OPEN_BONUS=0.5;
-const MAX_CLICHE=55, MAX_UNIFORM=25, MAX_CONNECTOR=12, MAX_PATTERN=10, MAX_HUMAN=20;
+const MAX_CLICHE=55, CLICHE_SCALE=4.5, MAX_UNIFORM=25, CV_SPAN=0.72;
+const MAX_CONNECTOR=12, MAX_PATTERN=10, MAX_PAIR=5, MAX_GENERIC=5, MAX_HUMAN=20;
 const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 const round1=x=>Math.round(x*10)/10;
 
@@ -337,14 +352,24 @@ function findHits(t){
   hits.sort((a,b)=>b.c[3]*b.count-a.c[3]*a.count);
   return hits;
 }
-function uniformityPoints(t){
-  const lens=splitSentences(t).map(countUnits).filter(u=>u>=3);
-  if(lens.length<4) return [0,-1];
+function cvOf(lens){
+  if(lens.length<4) return -1;
   const mean=lens.reduce((a,b)=>a+b,0)/lens.length;
-  if(mean===0) return [0,-1];
+  if(mean===0) return -1;
   const sd=Math.sqrt(lens.reduce((s,x)=>s+(x-mean)*(x-mean),0)/lens.length);
-  const cv=sd/mean;
-  return [MAX_UNIFORM*Math.max(0,1-cv/0.65), cv];
+  return sd/mean;
+}
+function uniformityPoints(t){
+  const sents=splitSentences(t);
+  const sentLens=sents.map(countUnits).filter(u=>u>=3);
+  const clauseLens=[];
+  for(const s of sents)
+    for(const c of s.split(/[,，、;；:：]/))
+      if(countUnits(c)>=2) clauseLens.push(countUnits(c));
+  const scv=cvOf(sentLens), ccv=cvOf(clauseLens);
+  const sp=scv>=0?MAX_UNIFORM*Math.max(0,1-scv/CV_SPAN):0;
+  const cp=ccv>=0?MAX_UNIFORM*Math.max(0,1-ccv/CV_SPAN):0;
+  return [Math.max(sp,0.8*cp), scv, ccv];
 }
 function starterRepetition(t){
   const sents=splitSentences(t).filter(s=>countUnits(s)>=3);
@@ -365,9 +390,32 @@ function starterRepetition(t){
   if(n>=3) return [Math.min(6,(n-2)*2),top,n];
   return [0,top,n];
 }
+// 对仗平衡：关联词成对出现 >=2 组才加分（单组是正常用法）
+const ZH_PAIRS=[[["不仅","不但"],["而且"]],[["虽然"],["但是","但"]],[["既"],["又"]],[["无论"],["都"]],[["与其"],["不如"]]];
+const EN_PAIRS=[[["not only"],["but also"]],[["on the one hand"],["on the other hand"]]];
+function pairPoints(t){
+  const lower=t.toLowerCase(); let pairs=0;
+  for(const p of ZH_PAIRS) if(p[0].some(k=>t.includes(k))&&p[1].some(k=>t.includes(k))) pairs++;
+  for(const p of EN_PAIRS) if(p[0].some(k=>lower.includes(k))&&p[1].some(k=>lower.includes(k))) pairs++;
+  if(pairs>=3) return [MAX_PAIR,pairs];
+  if(pairs===2) return [3,pairs];
+  return [0,pairs];
+}
+// 空泛度：全文没有一个数字、引用或句中专有名词
+function genericPoints(t,units){
+  const spec=(t.match(/\d/g)||[]).length
+           +(t.match(/[「」《》"']/g)||[]).length
+           +(t.match(/(?<=[a-z] )[A-Z][A-Za-z]+/g)||[]).length;
+  if(spec>0) return 0;
+  if(units>=120) return MAX_GENERIC;
+  if(units>=60) return 3;
+  return 0;
+}
 // ---- 人味信号（减分项）----
 const ZH_COLLOQUIAL=["真的","感觉","好家伙","笑死","绷不住","破防","无语","绝了","yyds","绝绝子","牛逼","贼","巨","超","寄","摆烂","摸鱼","干饭","早八","抢课","食堂","宿舍","室友","阿姨"];
 const EN_INFORMAL=["gonna","wanna","kinda","sorta","lol","lmao","tbh","imo","ngl","btw","stuff","yeah","nah","ok","okay"];
+const ZH_FILLERS=["然后","就是","那个","反正","话说"];
+const PERSONAL_RE=/我妈|我爸|我室友|舍友|我同学|我老师|我同事|我老板|我上次|我当时|我小时候|我高中|我大学|我奶|我爷|my (?:mom|dad|roommate|boss|teacher|grandma|grandpa|friend)/gi;
 function humanPoints(t){
   let pts=0; const sigs=[];
   const add=(kind,count,w,cap)=>{
@@ -377,6 +425,8 @@ function humanPoints(t){
   };
   add("中文语气词",(t.match(/[吧呢呗嘛啦哦嗯][，。！？!?,.\s]/g)||[]).length,1.5,6);
   add("中文口语/网络用语",ZH_COLLOQUIAL.filter(w=>t.includes(w)).length,2,5);
+  add("口头禅/填充词",ZH_FILLERS.reduce((s,w)=>s+t.split(w).length-1,0),0.5,3);
+  add("私人指称",(t.match(PERSONAL_RE)||[]).length,1,3);
   add("英文缩略形式",(t.match(/\b\w+(?:n't|'m|'re|'ve|'ll|'d)\b/gi)||[]).length,1,6);
   const lower=t.toLowerCase();
   add("英文口语",EN_INFORMAL.filter(w=>new RegExp("\\b"+escapeRe(w)+"\\b","i").test(lower)).length,2,4);
@@ -413,23 +463,26 @@ function analyze(text){
     clicheWeighted += h.c[3]*h.count + h.c[3]*h.opening*OPEN_BONUS;
     openingCount += h.opening;
   }
-  const clichePts=Math.min(MAX_CLICHE, clicheWeighted/units*100*14);
-  const connPts=Math.min(MAX_CONNECTOR, connectorCount/units*100*6);
-  const u=uniformityPoints(text), uniPts=u[0], cv=u[1];
+  // 平滑密度：分母 +40，防止短文本里单个命中被放大
+  const clichePts=Math.min(MAX_CLICHE, clicheWeighted/(units+40)*100*CLICHE_SCALE);
+  const connPts=Math.min(MAX_CONNECTOR, connectorCount/(units+40)*100*6);
+  const u=uniformityPoints(text);
   let patPts=0;
   if((text.match(/^\s*(?:[-*•]|\d{1,2}[.、)）])\s/gm)||[]).length>=3) patPts+=4;
   if(/首先[\s\S]{0,400}?其次[\s\S]{0,400}?(最后|再次)/.test(text)
   || /first(ly)?\b[\s\S]{0,400}?\bsecond(ly)?\b[\s\S]{0,400}?\b(finally|third(ly)?)\b/i.test(text)) patPts+=4;
-  const st=starterRepetition(text), starterPts=st[0], starter=st[1];
-  patPts=Math.min(MAX_PATTERN, patPts+starterPts);
+  const st=starterRepetition(text);
+  patPts=Math.min(MAX_PATTERN, patPts+st[0]);
+  const pp=pairPoints(text), generic=genericPoints(text,units);
   const human=humanPoints(text);
-  const score=Math.min(100,Math.max(0,round1(clichePts+uniPts+connPts+patPts-human.points)));
+  const score=Math.min(100,Math.max(0,round1(clichePts+u[0]+connPts+patPts+pp[0]+generic-human.points)));
   return {
     score:score, hits:hits, units:units,
-    clichePts:round1(clichePts), uniPts:round1(uniPts), cv:cv,
+    clichePts:round1(clichePts), uniPts:round1(u[0]), sentCv:u[1], clauseCv:u[2],
     connPts:round1(connPts), patPts:round1(patPts),
-    starterPts:round1(starterPts), starter:starterPts>0?starter:"",
-    openingCount:openingCount,
+    starterPts:round1(st[0]), starter:st[0]>0?st[1]:"",
+    openingCount:openingCount, pairPts:round1(pp[0]), pairCount:pp[1],
+    genericPts:round1(generic),
     humanPts:human.points, humanSigs:human.sigs,
     hitCount:hits.reduce((s,h)=>s+h.count,0)
   };
@@ -484,11 +537,15 @@ function render(text,r){
   let bd="";
   bd+=bdRow("陈词滥调密度",r.clichePts,55,
     r.openingCount?("命中 "+r.hitCount+" 处，含开场套路 ×"+r.openingCount):("命中 "+r.hitCount+" 处"));
-  bd+=bdRow("句长均匀度",r.uniPts,25,
-    r.cv>=0?("句长变异系数 "+r.cv.toFixed(2)):"句子太少，不评");
+  bd+=bdRow("节奏均匀度",r.uniPts,25,
+    r.sentCv>=0?("句长CV "+r.sentCv.toFixed(2)+" / 分句CV "+(r.clauseCv>=0?r.clauseCv.toFixed(2):"—")):"句子太少，不评");
   bd+=bdRow("八股连接词",r.connPts,12,"");
   bd+=bdRow("套路结构",r.patPts,10,
     r.starterPts?("含句首重复「"+r.starter+"」+"+r.starterPts):"");
+  bd+=bdRow("对仗平衡",r.pairPts,5,
+    r.pairCount>=2?("关联词成对 ×"+r.pairCount):"");
+  bd+=bdRow("空泛度",r.genericPts,5,
+    r.genericPts?"全文无数字/引用/专有名词":"");
   bd+=bdRow("人味信号",r.humanPts,20,r.humanPts?"活人证据，减分":"",true);
   $("breakdown").innerHTML=bd;
 

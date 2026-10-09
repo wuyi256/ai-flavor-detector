@@ -30,6 +30,17 @@ _EN_INFORMAL = [
     "ngl", "btw", "stuff", "yeah", "nah", "ok", "okay",
 ]
 
+# 中文口头禅/填充词：AI 写作几乎不用
+_ZH_FILLERS = ["然后", "就是", "那个", "反正", "话说"]
+
+# 私人指称：AI 说明文很少提到「我妈」「我室友」
+_PERSONAL_RE = re.compile(
+    r"我妈|我爸|我室友|舍友|我同学|我老师|我同事|我老板|我上次|我当时|"
+    r"我小时候|我高中|我大学|我奶|我爷"
+    r"|my (?:mom|dad|roommate|boss|teacher|grandma|grandpa|friend)",
+    re.I,
+)
+
 _EMOJI_RE = re.compile(
     "[\U0001F000-\U0001FAFF☀-➿⬀-⯿]"
 )
@@ -72,6 +83,14 @@ def compute_human_points(text: str) -> Tuple[float, List[HumanSignal]]:
 
     zh_hits = [w for w in _ZH_COLLOQUIAL if w in text]
     add("中文口语/网络用语", "、".join(zh_hits[:3]), len(zh_hits), 2.0, 5)
+
+    filler_count = sum(text.count(w) for w in _ZH_FILLERS)
+    add("口头禅/填充词", "、".join(w for w in _ZH_FILLERS if w in text)[:12],
+        filler_count, 0.5, 3)
+
+    personal = _PERSONAL_RE.findall(text)
+    add("私人指称", "、".join(personal[:3]) if personal else "",
+        len(personal), 1.0, 3)
 
     contractions = _EN_CONTRACTION_RE.findall(text)
     add("英文缩略形式", ", ".join(contractions[:3]), len(contractions), 1.0, 6)

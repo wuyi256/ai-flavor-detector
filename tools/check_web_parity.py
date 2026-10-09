@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, os.path.join(ROOT, "benchmark"))
 
 from aiflavor import analyze  # noqa: E402
-from samples import AI_SAMPLES, HUMAN_SAMPLES  # noqa: E402
+from samples import AI_SAMPLES, HUMAN_SAMPLES, SUBTLE_AI_SAMPLES  # noqa: E402
 
 TOLERANCE = 0.2  # Python round() 银行家舍入 vs JS Math.round 的边界差
 
@@ -50,9 +50,11 @@ def extract_js() -> str:
 
 def main() -> int:
     verbose = "-v" in sys.argv
-    samples = [("AI-%d" % (i + 1), t) for i, t in enumerate(AI_SAMPLES)] + [
-        ("人-%d" % (i + 1), t) for i, t in enumerate(HUMAN_SAMPLES)
-    ]
+    samples = (
+        [("AI-%d" % (i + 1), t) for i, t in enumerate(AI_SAMPLES)]
+        + [("隐蔽AI-%d" % (i + 1), t) for i, t in enumerate(SUBTLE_AI_SAMPLES)]
+        + [("人-%d" % (i + 1), t) for i, t in enumerate(HUMAN_SAMPLES)]
+    )
     py_scores = {label: analyze(text).score for label, text in samples}
 
     with tempfile.TemporaryDirectory() as tmp:

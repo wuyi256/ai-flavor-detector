@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""基准测试集：6 段 AI 文本 + 6 段人类文本，用于验证评分模型的区分度。
+"""基准测试集：典型 AI + 隐蔽型 AI + 人类文本，验证评分模型的区分度。
 
 AI_SAMPLES：用大模型生成后未加修改的典型输出（公文腔 / 学术八股 / 产品文案）。
-HUMAN_SAMPLES：日记、聊天记录、论坛回帖、商品评价等真实口语化写作。
+SUBTLE_AI_SAMPLES：新一代模型的「顺滑」输出——不堆大词、不靠模板，
+    但节奏均匀、通篇抽象。这类文本打不了高分是诚实的，
+    考核要求是至少进入「略有 AI 嫌疑」的灰区（>= 25 分）。
+HUMAN_SAMPLES：日记、聊天记录、论坛回帖、商品评价、认真写的实验反思等真实人类写作。
 """
 
 AI_SAMPLES = [
@@ -76,4 +79,28 @@ HUMAN_SAMPLES = [
     "文件是 GBK 的，我一直按 UTF-8 读。改完之后程序跑通了，但结果和助教给的参考答案对不上，"
     "又调了一个晚上，最后发现是我把两个变量的顺序写反了。说实话这个过程挺折磨人的，"
     "但调通那一刻确实开心。我最大的收获是：报错信息要认真看，它基本都告诉你问题在哪了。",
+]
+
+# 隐蔽型 AI：新一代模型的顺滑输出，不堆大词、通篇抽象、节奏均匀。
+# 考核阈值 >= 25（进入灰区），不要求 >= 40——规则模型对这类文本就该坦白「拿不准」。
+SUBTLE_AI_SAMPLES = [
+    # 1 中文 AI 科普（无词库命中，全靠节奏和空泛度抓）
+    "人工智能的发展为教育领域带来了新的可能性。个性化学习路径的构建，"
+    "使得每个学生都能获得适合自己的学习体验。教师的角色也在发生转变，"
+    "从知识的传授者变为学习的引导者。然而，技术的应用也伴随着挑战，"
+    "数据隐私和算法偏见等问题需要得到妥善解决。"
+    "只有在技术与伦理之间找到平衡，才能让教育真正受益于这场变革。",
+    # 2 中文 AI 说明文
+    "区块链技术本质上是一种分布式账本。每一笔交易都会被打包进区块，"
+    "并按时间顺序链接起来。由于数据同时存储在多个节点上，"
+    "篡改任何一条记录都需要控制大部分节点，这在实际操作中几乎不可能。"
+    "正是这一特性，让它在金融、物流等领域受到关注。"
+    "不过，能耗问题和交易速度仍然是它需要跨越的门槛。",
+    # 3 英文 AI 说明文
+    "The human brain processes visual information far faster than text. "
+    "This is why a well-designed chart can communicate in seconds what a "
+    "paragraph might struggle to explain. When teams review data together, "
+    "a shared visual reference reduces misunderstanding and keeps the "
+    "discussion grounded. Choosing the right chart type, however, depends "
+    "on the question you are trying to answer.",
 ]
