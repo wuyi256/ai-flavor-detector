@@ -3,4 +3,4 @@
 from .analyzer import Analysis, Hit, analyze
 
 __all__ = ["analyze", "Analysis", "Hit"]
-__version__ = "0.1.0"
+__version__ = "0.3.0"

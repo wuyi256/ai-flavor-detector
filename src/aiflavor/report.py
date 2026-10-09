@@ -60,9 +60,14 @@ def render_terminal(analysis: Analysis, text: str, color: bool = True) -> str:
     lines.append(c(_score_color(analysis.score)) + _bar(analysis.score) + c(_RESET)
                  + "  " + c(_BOLD) + analysis.verdict + c(_RESET))
     lines.append("")
+    opening = f"（含开场套路 ×{s['opening_hits']}）" if s.get("opening_hits") else ""
+    starter = (f"（含句首重复「{s.get('starter', '')}」+{s['starter_points']}）"
+               if s.get("starter_points") else "")
     lines.append(c(_DIM) + f"字数 {s['units']} | 命中 {s['hit_count']} 处 | "
-                 f"大词 {s['cliche_points']} 分 | 句长均匀 {s['uniformity_points']} 分"
-                 f" | 八股连接词 {s['connector_points']} 分 | 套路结构 {s['pattern_points']} 分"
+                 f"大词 {s['cliche_points']} 分{opening}"
+                 f" | 句长均匀 {s['uniformity_points']} 分"
+                 f" | 八股连接词 {s['connector_points']} 分"
+                 f" | 套路结构 {s['pattern_points']} 分{starter}"
                  f" | 人味信号 -{s['human_points']} 分"
                  + c(_RESET))
     lines.append("")

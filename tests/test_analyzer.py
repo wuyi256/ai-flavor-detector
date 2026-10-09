@@ -108,5 +108,52 @@ class TestAnalyze(unittest.TestCase):
         self.assertGreater(min(ai_scores) - max(human_scores), 20.0)
 
 
+    def test_starter_repetition(self):
+        """每句话都用同一个词开头 -> 句首重复加分。"""
+        text = (
+            "The system improves efficiency across all departments every day. "
+            "The system reduces cost for small teams and large companies. "
+            "The system supports scaling from ten users to ten thousand users. "
+            "The system ensures reliability under heavy load and failures. "
+            "The system protects privacy with strong encryption at rest. "
+            "The system adapts to change without breaking existing workflows."
+        )
+        a = analyze(text)
+        self.assertGreater(a.stats["starter_points"], 0)
+        self.assertEqual(a.stats["starter"], "the")
+
+    def test_no_starter_repetition_in_human_text(self):
+        a = analyze(HUMAN_ZH_TEXT)
+        self.assertEqual(a.stats["starter_points"], 0)
+
+    def test_opening_template_weighted_more(self):
+        """同一个套路模板，放开头比藏中间扣分更狠。"""
+        opening = "综上所述，" + "我们今天讨论了课程安排和作业截止时间的具体细节，" * 6
+        buried = "我们今天讨论了课程安排和作业截止时间的具体细节，" * 6 + "综上所述，"
+        a_open = analyze(opening)
+        a_buried = analyze(buried)
+        self.assertGreater(a_open.stats["cliche_points"], a_buried.stats["cliche_points"])
+        self.assertGreaterEqual(a_open.stats["opening_hits"], 1)
+
+    def test_short_sentences_are_human_signal(self):
+        text = (
+            "结果出来了。挂了。就差两分。气死。补考安排在下周三，"
+            "这次说啥也得过了，不然真没法跟家里交代。"
+        )
+        a = analyze(text)
+        kinds = {s.kind for s in a.human_signals}
+        self.assertIn("短句", kinds)
+
+    def test_dash_and_question_signals(self):
+        text = (
+            "他说明天交——真的假的？上次也是这么说的。你信吗？我反正不信。"
+            "这周作业多到离谱——三道大题，还要写报告，谁顶得住啊？"
+        )
+        a = analyze(text)
+        kinds = {s.kind for s in a.human_signals}
+        self.assertIn("破折号/波浪号", kinds)
+        self.assertIn("问句", kinds)
+
+
 if __name__ == "__main__":
     unittest.main()

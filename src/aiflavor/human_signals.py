@@ -1,7 +1,9 @@
-"""人味信号：AI 很少这么写的东西——口语助词、emoji、省略号、感叹号、英文缩略形式……
+"""人味信号：AI 很少这么写的东西——口语助词、短句、emoji、破折号、省略号……
 
 这些信号用来【减分】，压低对人类口语化文本的误判。
 总分最多减 20 分。
+
+注意：网页版 docs/index.html 里的 JS 实现与本文件逐条对应，改动请两边同步。
 """
 from __future__ import annotations
 
@@ -33,6 +35,12 @@ _EMOJI_RE = re.compile(
 )
 _ELLIPSIS_RE = re.compile(r"……|\.\.\.")
 _EXCLAIM_RE = re.compile(r"[！!]")
+_QUESTION_RE = re.compile(r"[？?]")
+# 破折号（—— 算一次）、波浪号：人类随笔的标配，AI 几乎不用
+_DASH_RE = re.compile(r"——|[—~～]")
+_SENT_SPLIT_RE = re.compile(r"[.!?。！？]+")
+_EN_WORD_RE = re.compile(r"[A-Za-z]+(?:[-'][A-Za-z]+)*")
+_CJK_RE = re.compile(r"[一-鿿]")
 
 MAX_HUMAN_POINTS = 20.0
 
@@ -43,6 +51,10 @@ class HumanSignal:
     detail: str     # 命中示例
     count: int
     points: float
+
+
+def _count_units(text: str) -> int:
+    return len(_EN_WORD_RE.findall(text)) + len(_CJK_RE.findall(text))
 
 
 def compute_human_points(text: str) -> Tuple[float, List[HumanSignal]]:
@@ -76,6 +88,20 @@ def compute_human_points(text: str) -> Tuple[float, List[HumanSignal]]:
 
     exclaims = _EXCLAIM_RE.findall(text)
     add("感叹号", "！", len(exclaims), 0.5, 6)
+
+    questions = _QUESTION_RE.findall(text)
+    add("问句", "？", len(questions), 0.5, 3)
+
+    dashes = _DASH_RE.findall(text)
+    add("破折号/波浪号", "——", len(dashes), 1.0, 3)
+
+    # 短句：「气死。」「行吧。」——AI 写不出这么碎的句子
+    short_sents = [
+        s for s in _SENT_SPLIT_RE.split(text)
+        if 1 <= _count_units(s) <= 6
+    ]
+    add("短句", "「" + short_sents[0].strip()[:6] + "」" if short_sents else "",
+        len(short_sents), 1.0, 4)
 
     total = min(MAX_HUMAN_POINTS, sum(s.points for s in signals))
     return round(total, 1), signals

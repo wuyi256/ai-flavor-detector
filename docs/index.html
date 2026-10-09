@@ -1,285 +1,541 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 味检测器</title>
+<html lang="zh-CN" data-page-node-id="vG1j7YT4nlhDNw1PRniREM">
+<head data-page-node-id="0D6ajXu48Hzs6JqMQOjz8y">
+<meta charset="UTF-8" data-page-node-id="ZrDtzyx1k17mGeZTN5zwF5">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="HfRQyxbQp9rG9vDOrsFjHh">
+<title>AI 味检测报告</title>
 <style>
   :root{
-    --bg:#f6f7fb; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
-    --accent:#6366f1; --accent2:#8b5cf6; --red:#e11d48; --green:#059669; --amber:#d97706;
-    --border:#e5e7eb;
+    --paper:#efece1;
+    --sheet:#fbf8ee;
+    --ink:#2b2820;
+    --faint:#8a8577;
+    --line:#d9d3c2;
+    --seal:#b23a2e;
+    --human:#3d6b4f;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;line-height:1.7}
-  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 64px}
-  header{text-align:center;margin-bottom:28px}
-  header h1{font-size:32px;background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  header p{color:var(--muted);margin-top:6px;font-size:14px}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,20,60,.05)}
-  textarea{width:100%;min-height:170px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:15px;font-family:inherit;resize:vertical;line-height:1.7}
-  textarea:focus{outline:2px solid var(--accent);border-color:transparent}
-  .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-  button{border:none;border-radius:10px;padding:10px 22px;font-size:15px;cursor:pointer;font-family:inherit}
-  .btn-primary{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;font-weight:600}
-  .btn-ghost{background:#eef0f6;color:var(--ink)}
-  .btn-ghost:hover{background:#e3e6f0}
-  .score-zone{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
-  .gauge{flex:0 0 auto}
-  .gauge .num{font-size:34px;font-weight:700}
-  .verdict{font-size:20px;font-weight:700;margin-top:2px}
-  .breakdown{flex:1;min-width:260px}
-  .bd-row{display:grid;grid-template-columns:110px 1fr 46px;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin:6px 0}
-  .bd-track{background:#eef0f6;border-radius:6px;height:10px;overflow:hidden}
-  .bd-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-  .hl{line-height:2;font-size:15px;white-space:pre-wrap;word-break:break-word}
-  .hl mark{background:#ffe4e6;color:var(--red);border-radius:4px;padding:0 2px;font-weight:600}
-  .tips li{margin:6px 0 6px 18px;font-size:14px}
-  .hidden{display:none}
-  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
-  footer a{color:var(--accent);text-decoration:none}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+    line-height:1.8;
+    padding:28px 14px 60px;
+  }
+  .sheet{
+    max-width:820px;margin:0 auto;background:var(--sheet);
+    border:1px solid var(--line);
+    box-shadow:0 2px 0 rgba(43,40,32,.06), 0 14px 34px rgba(43,40,32,.08);
+    background-image:repeating-linear-gradient(0deg,transparent 0 35px,rgba(43,40,32,.035) 35px 36px);
+    padding:38px 44px 30px;
+  }
+  /* ---- 报头 ---- */
+  .masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .masthead h1{font-size:30px;letter-spacing:6px;font-weight:700}
+  .masthead .en{font-family:"Courier New",monospace;font-size:11px;letter-spacing:3px;color:var(--faint);margin-top:2px}
+  .meta{font-family:"Courier New",monospace;font-size:12px;color:var(--faint);text-align:right;line-height:1.6}
+  .rule{border-bottom:3px double var(--ink);margin:14px 0 22px}
+  /* ---- 输入区 ---- */
+  .field-label{font-size:13px;color:var(--faint);letter-spacing:2px;margin-bottom:6px}
+  textarea{
+    width:100%;min-height:150px;border:1px solid var(--ink);
+    background:rgba(255,255,255,.5);
+    padding:12px 14px;font-size:15px;font-family:inherit;line-height:1.9;
+    resize:vertical;
+  }
+  textarea:focus{outline:2px solid var(--seal);outline-offset:1px}
+  .input-bar{display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:10px}
+  .count{font-family:"Courier New",monospace;font-size:12px;color:var(--faint)}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
+  button{
+    font-family:inherit;font-size:14px;cursor:pointer;
+    border:1.5px solid var(--ink);background:transparent;color:var(--ink);
+    padding:7px 16px;letter-spacing:1px;
+  }
+  button:hover{background:var(--ink);color:var(--sheet)}
+  button:active{transform:translateY(2px)}
+  button.primary{background:var(--ink);color:var(--sheet)}
+  button.primary:hover{background:var(--seal);border-color:var(--seal)}
+  /* ---- 结果 ---- */
+  #result{display:none;margin-top:30px}
+  .sec-title{
+    font-size:15px;letter-spacing:4px;font-weight:700;margin:26px 0 10px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .sec-title::after{content:"";flex:1;border-bottom:1px solid var(--line)}
+  .score-line{position:relative;display:flex;align-items:center;gap:26px;min-height:120px;padding-right:140px}
+  .score-num{font-family:"Courier New",monospace;font-size:56px;font-weight:700;line-height:1}
+  .score-num small{font-size:16px;color:var(--faint);font-weight:400}
+  .verdict-text{font-size:18px;font-weight:700}
+  .verdict-sub{font-size:13px;color:var(--faint);margin-top:4px}
+  .stamp{
+    position:absolute;right:6px;top:50%;
+    width:118px;height:118px;margin-top:-59px;
+    border:4px double var(--seal);border-radius:50%;
+    color:var(--seal);
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-size:19px;font-weight:700;letter-spacing:3px;line-height:1.5;
+    transform:rotate(-13deg);opacity:.85;
+    padding:10px;
+  }
+  /* 分项表 */
+  .bd-row{
+    display:flex;align-items:baseline;gap:8px;
+    font-size:14px;padding:5px 0;
+  }
+  .bd-row .name{white-space:nowrap}
+  .bd-row .dots{flex:1;border-bottom:1px dotted var(--faint);transform:translateY(-4px)}
+  .bd-row .val{font-family:"Courier New",monospace;font-size:13px;white-space:nowrap}
+  .bd-row .note{font-size:12px;color:var(--faint);white-space:nowrap}
+  .bd-row.minus .val{color:var(--human)}
+  /* 原文标注 */
+  .hl{
+    font-size:15px;line-height:2.1;white-space:pre-wrap;word-break:break-word;
+    border:1px dashed var(--line);padding:14px 16px;background:rgba(255,255,255,.4);
+  }
+  .hit{
+    text-decoration:underline wavy var(--seal);
+    text-underline-offset:4px;
+    cursor:help;position:relative;
+  }
+  .hit:hover{background:rgba(178,58,46,.12)}
+  .hit::after{
+    content:attr(data-tip);
+    position:absolute;left:0;bottom:135%;z-index:9;
+    background:var(--ink);color:var(--sheet);
+    font-size:12px;line-height:1.5;letter-spacing:0;
+    padding:5px 10px;white-space:nowrap;max-width:70vw;
+    opacity:0;pointer-events:none;transition:opacity .15s;
+  }
+  .hit:hover::after{opacity:1}
+  /* 建议与信号 */
+  ol.tips{margin-left:22px;font-size:14px}
+  ol.tips li{margin:5px 0}
+  .sig{font-size:13px;color:var(--human);margin:3px 0}
+  .sig::before{content:"－ "}
+  footer{
+    margin-top:34px;padding-top:12px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;
+    font-size:12px;color:var(--faint);
+  }
+  footer a{color:var(--ink)}
+  .hint{font-size:13px;color:var(--faint);margin-top:18px}
+  @media (max-width:640px){
+    .sheet{padding:24px 18px}
+    .score-line{padding-right:0;min-height:0}
+    .stamp{position:static;transform:rotate(-8deg);margin:14px 0 0}
+    .score-line{flex-wrap:wrap}
+  }
 </style>
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <h1>AI 味检测器</h1>
-    <p>给文字打个「AI 浓度分」· 中英文都支持 · 全部计算在浏览器本地完成，文字不出本机</p>
-  </header>
+<body data-page-node-id="ftSPw1XcSfNc2wBYm6a9Hj">
+<div class="sheet" data-page-node-id="2DABuRIZufTyoTn11MRAj8">
+  <div class="masthead" data-page-node-id="lRJG8f78TRrryUZmd8oOIF">
+    <div data-page-node-id="WQBlz1Rk1vHlClgwO8Rv9I">
+      <h1 data-page-node-id="EAmIOcCV7EMWlmiYMMn9FB">AI 味检测报告</h1>
+      <div class="en" data-page-node-id="HkFBqfbsN8wvFnYHtcfcju">AI&nbsp;FLAVOR&nbsp;INSPECTION&nbsp;REPORT</div>
+    </div>
+    <div class="meta" data-page-node-id="uA3NRRAyBRPokxM5XqbMwP">
+      编号 <span id="repNo" data-page-node-id="qAo50G1QDhvzXeCkWNPIBz">№ ————</span><br data-page-node-id="OmD0rH4v9m9GGsuZ1PFipm">
+      日期 <span id="repDate" data-page-node-id="GeLANYkQkZwVG7b2vNzMmT">——————</span>
+    </div>
+  </div>
+  <div class="rule" data-page-node-id="snUXdewYvs9y95SssF8A2D"></div>
 
-  <div class="card">
-    <textarea id="input" placeholder="把要检测的文字贴进来（至少三五十个字）……"></textarea>
-    <div class="row">
-      <button class="btn-primary" onclick="run()">开始检测</button>
-      <button class="btn-ghost" onclick="loadSample('ai')">来段 AI 范文</button>
-      <button class="btn-ghost" onclick="loadSample('human')">来段人话</button>
+  <div class="field-label" data-page-node-id="d0dfUHS38J7WNRB6t9oZGc">受 检 文 本</div>
+  <textarea id="input" placeholder="把要检测的文字贴进来——贴够三五十个字就出报告，边贴边测。"></textarea>
+  <div class="input-bar" data-page-node-id="h0NiXv6Ec4X1HIpPVztalA">
+    <span class="count" id="count" data-page-node-id="XjyKM8vLu1geyAlsyv3i9W">已输入 0 字（英文按词计）</span>
+    <div class="btns" data-page-node-id="LQqgvgI9y5WPGkreCnGvGq">
+      <button onclick="loadSample('ai')" data-page-node-id="wORwevkZ1GC5wV4ZI6xvPl">装一段 AI 范文</button>
+      <button onclick="loadSample('human')" data-page-node-id="HV2NOBNrLwXe2aG81sF0Zi">装一段人话</button>
+      <button onclick="clearAll()" data-page-node-id="NymqcNEabHOnu1Rt2lAaIQ">清空</button>
+      <button class="primary" onclick="run()" data-page-node-id="4QUOC0TgglDGnibPEXVWtH">出具报告</button>
     </div>
   </div>
 
-  <div class="card hidden" id="resultCard">
-    <div class="score-zone">
-      <div class="gauge">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r="58" fill="none" stroke="#eef0f6" stroke-width="12"/>
-          <circle id="arc" cx="70" cy="70" r="58" fill="none" stroke="url(#g)" stroke-width="12"
-                  stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"
-                  transform="rotate(-90 70 70)"/>
-          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/>
-          </linearGradient></defs>
-          <text id="scoreText" x="70" y="66" text-anchor="middle" class="num" fill="#1f2430" font-size="34" font-weight="700">0</text>
-          <text x="70" y="90" text-anchor="middle" fill="#6b7280" font-size="12">/ 100</text>
-        </svg>
+  <div id="result" data-page-node-id="OZtgnLfayhlAF6ycVUTO1x">
+    <div class="sec-title" data-page-node-id="MomTYAZWVhDKoKUXyvYjmu">检 测 结 论</div>
+    <div class="score-line" data-page-node-id="eXOPt7VZNIX3lq6du6iOMN">
+      <div class="score-num" data-page-node-id="HKEEPC0t8OD1C2TWgyshaB"><span id="score" data-page-node-id="EVHVqDZRukxvGZDEMlc3wA">0</span><small data-page-node-id="DDhkTHnDeszLHDhxjMGxdR"> / 100</small></div>
+      <div data-page-node-id="unqoEmhYn1rjYzcytGPNlU">
+        <div class="verdict-text" id="verdict" data-page-node-id="ThgZ0ZhPJ40E6NLqnaW8kf"></div>
+        <div class="verdict-sub" id="verdictSub" data-page-node-id="CSvwSR8avuEZzqLn6WyYYX"></div>
       </div>
-      <div class="breakdown">
-        <div class="verdict" id="verdict"></div>
-        <div class="bd-row"><span>陈词滥调</span><div class="bd-track"><div class="bd-fill" id="bd1"></div></div><span id="bd1v"></span></div>
-        <div class="bd-row"><span>句长均匀</span><div class="bd-track"><div class="bd-fill" id="bd2"></div></div><span id="bd2v"></span></div>
-        <div class="bd-row"><span>八股连接词</span><div class="bd-track"><div class="bd-fill" id="bd3"></div></div><span id="bd3v"></span></div>
-        <div class="bd-row"><span>套路结构</span><div class="bd-track"><div class="bd-fill" id="bd4"></div></div><span id="bd4v"></span></div>
-        <div class="bd-row"><span>人味信号</span><div class="bd-track"><div class="bd-fill" id="bd5" style="background:linear-gradient(90deg,#059669,#34d399)"></div></div><span id="bd5v"></span></div>
-      </div>
+      <div class="stamp" id="stamp" data-page-node-id="MWABCvcUiQ8970sFOAMR81"></div>
+    </div>
+
+    <div class="sec-title" data-page-node-id="fvqhX644yJLpzvhmT8EmOT">分 项 得 分</div>
+    <div id="breakdown" data-page-node-id="MNpNwlVo2suFmSS6paaz6S"></div>
+
+    <div class="sec-title" data-page-node-id="a2jvvqTVCxuhxUAnuPZdaQ">原 文 标 注</div>
+    <div class="hint" style="margin:0 0 8px" data-page-node-id="o1AaakBbI4qXmfUQSD7S4n">波浪下划线 = 命中的 AI 高频词，把鼠标放上去看替换建议。</div>
+    <div class="hl" id="hl" data-page-node-id="P6BPF3sqD6FerDOms8gFOZ"></div>
+
+    <div class="sec-title" data-page-node-id="0RFwRiroTRHLDi6e1NYKkO">去 味 建 议</div>
+    <ol class="tips" id="tips" data-page-node-id="v35hjMF3higAxBA1gzpAdF"></ol>
+
+    <div id="sigBlock" data-page-node-id="zDy7UZEF8CSkS3sFDcX43L">
+      <div class="sec-title" data-page-node-id="G0reZFtr9GGMl5y3eaCS88">人 味 信 号（减 分 项）</div>
+      <div id="sigs" data-page-node-id="OEYWwZBHEqXGkdGsaZDXt2"></div>
     </div>
   </div>
 
-  <div class="card hidden" id="hlCard">
-    <b>原文高亮</b>（标红 = AI 高频词）
-    <div class="hl" id="hl" style="margin-top:8px"></div>
-  </div>
-
-  <div class="card hidden" id="tipsCard">
-    <b>去味建议</b>
-    <ul class="tips" id="tips"></ul>
-  </div>
-
-  <footer>
-    词库与评分算法开源：<a href="https://github.com/wuyi256/ai-flavor-detector">github.com/wuyi256/ai-flavor-detector</a>
+  <footer data-page-node-id="rjZiHltc9C9nMQowcT8qRV">
+    <span data-page-node-id="wcaHrFuk7QZkUfSK2r4fgP">全部计算在浏览器本地完成，文字不出本机。</span>
+    <span data-page-node-id="BlI2cArGoVhzUq1G6GiCt4">词库与算法开源 · <a href="https://github.com/wuyi256/ai-flavor-detector" data-page-node-id="dQuR8KCcQcXtyHQC9ef5DR">github.com/wuyi256/ai-flavor-detector</a></span>
   </footer>
 </div>
 
 <script>
-// ---- 词库（与 Python 版 src/aiflavor/lexicon.py 保持一致）----
+"use strict";
+// ==ALGORITHM-BEGIN==
+// 与 Python 版 src/aiflavor/ 逐条对应，改动请两边同步（tools/check_web_parity.py 会校验分数一致）
 // [pattern, lang, category, weight, suggestion]
 const CLICHES = [
-["delve","en","buzzword",3,"换成 dig into / look at"],["leverage","en","buzzword",3,"换成 use"],
-["utilize","en","buzzword",3,"换成 use"],["facilitate","en","buzzword",3,"换成 help"],
-["robust","en","buzzword",3,"具体说哪里好"],["seamless","en","buzzword",3,"具体说怎么顺"],
-["cutting-edge","en","buzzword",3,"说具体技术"],["state-of-the-art","en","buzzword",3,"说具体指标"],
-["game-changer","en","buzzword",3,"说改变了什么"],["realm","en","buzzword",3,"换成 field"],
-["navigate","en","buzzword",3,"换成 deal with"],["foster","en","buzzword",3,"换成 encourage"],
-["holistic","en","buzzword",3,"说清哪几个方面"],["paradigm","en","buzzword",3,"换成 model"],
-["tapestry","en","buzzword",3,"说人话"],["multifaceted","en","buzzword",3,"列举是哪几面"],
-["underscore","en","buzzword",3,"换成 show"],["pivotal","en","buzzword",3,"换成 key"],
-["crucial","en","buzzword",3,"换成 important"],["elevate","en","buzzword",3,"换成 improve"],
-["unlock","en","buzzword",3,"换成 enable"],["unleash","en","buzzword",3,"收一收戏剧性"],
-["harness","en","buzzword",3,"换成 use"],["embark","en","buzzword",3,"换成 start"],
-["spearhead","en","buzzword",3,"换成 lead"],["bolster","en","buzzword",3,"换成 support"],
-["synergy","en","buzzword",3,"说清谁和谁配合"],["shed light on","en","buzzword",3,"换成 explain"],
-["testament","en","buzzword",3,"换成 shows"],
-["comprehensive","en","buzzword",2,"说清覆盖什么"],["innovative","en","buzzword",2,"说清新在哪"],
-["significantly","en","buzzword",2,"给数字"],["effectively","en","buzzword",2,"给效果"],
-["numerous","en","buzzword",2,"给数字"],["various","en","buzzword",2,"列举几个"],
-["journey","en","buzzword",2,"除非真在旅行"],["landscape","en","buzzword",2,"换成 field"],
-["ever-evolving","en","buzzword",2,"删掉"],["fast-paced","en","buzzword",2,"AI 开头标配"],
-["play a role","en","template",2,"换具体动词"],["wide range of","en","template",2,"列举几个"],
-["in today's world","en","template",3,"AI 开场白第一名"],
-["moreover","en","connector",1.5,"换成 also"],["furthermore","en","connector",1.5,"换成 also"],
-["in addition","en","connector",1.5,"换成 also"],["consequently","en","connector",1.5,"换成 so"],
-["in conclusion","en","connector",1.5,"直接说结论"],["firstly","en","connector",1.5,"first 就够"],
-["it is important to note","en","template",2.5,"别预告，直接讲"],
-["it is worth noting","en","template",2.5,"直接讲"],["it goes without saying","en","template",2.5,"那就别说"],
-["赋能","zh","buzzword",3,"说清谁帮谁做了什么"],["抓手","zh","buzzword",3,"换成「切入点」"],
-["闭环","zh","buzzword",3,"说清流程"],["链路","zh","buzzword",3,"换成「流程」"],
-["颗粒度","zh","buzzword",3,"换成「细致程度」"],["对齐","zh","buzzword",3,"换成「确认」"],
-["拉通","zh","buzzword",3,"换成「一起沟通」"],["组合拳","zh","buzzword",3,"列举哪几招"],
-["心智","zh","buzzword",3,"换成「印象」"],["生态化反","zh","buzzword",3,"祝好运"],
-["全方位","zh","buzzword",2.5,"列举哪几方面"],["多维度","zh","buzzword",2.5,"列举哪几维度"],
-["深层次","zh","buzzword",2.5,"说清深在哪"],["系统性","zh","buzzword",2,"说清哪些部分"],
-["沉淀","zh","buzzword",2,"换成「积累」"],["打法","zh","buzzword",2,"换成「做法」"],
-["综上所述","zh","template",2.5,"直接说结论"],["总而言之","zh","template",2.5,"直接说结论"],
-["总的来说","zh","template",2,"直接说结论"],["由此可见","zh","template",2,"换成「所以」"],
-["毋庸置疑","zh","template",2.5,"无疑就不用强调"],["显而易见","zh","template",2.5,"明显就不用说"],
-["不难发现","zh","template",2,"删掉"],["值得注意的是","zh","template",2.5,"直接讲"],
-["众所周知","zh","template",2.5,"都知道就别说"],["在某种程度上","zh","template",2,"哪种程度？"],
-["在一定程度上","zh","template",2,"哪种程度？"],["随着时代的","zh","template",2.5,"AI 开场白"],
-["不断发展","zh","template",1.5,"重灾区"],["重要性不言而喻","zh","template",3,"不言自明就别言"],
-["首先","zh","connector",1,"连用像提纲"],["其次","zh","connector",1.5,"AI 八股"],
-["与此同时","zh","connector",1.5,"换成「同时」"],["此外","zh","connector",1,"连用有味"],
-["然而","zh","connector",1,"换成「但是」"],["不仅","zh","connector",1,"注意连用"],
-["一方面","zh","connector",1.5,"八股"],["另一方面","zh","connector",1.5,"说人话：「再说」"],
-["notably","en","connector",1.5,"AI 爱用"],["importantly","en","connector",1.5,"直接讲"],
-["indeed","en","connector",1,"口语里几乎不用"],["in the realm of","en","template",2.5,"换成 in"],
-["a testament to","en","template",3,"换成 shows"],["plays a crucial role","en","template",3,"换具体动词"],
-["it is essential","en","template",2,"直接说 must"],["in recent years","en","template",1.5,"AI 开场标配"],
-["has become increasingly","en","template",2,"给数据"],["delve into","en","buzzword",3,"换成 look into"],
-["打造","zh","buzzword",1.5,"连用是重灾区"],["助力","zh","buzzword",1.5,"换成「帮助」"],
-["聚焦","zh","buzzword",1.5,"换成「关注」"],["深耕","zh","buzzword",2,"换成「长期做」"],
-["落地","zh","buzzword",1.5,"换成「用起来」"],["赛道","zh","buzzword",2,"换成「领域」"],
-["新征程","zh","template",2.5,"AI 公文腔"],["谱写","zh","template",2,"公文标配"],
-["绘就","zh","template",2,"同理"],["迈向","zh","template",1.5,"连用注意"],
-["大背景下","zh","template",2,"AI 开场白"],["引发了广泛关注","zh","template",2.5,"谁关注？"],
-["成为了人们关注的焦点","zh","template",2.5,"同上"],["带来了前所未有的","zh","template",2.5,"先证明"],
+["delve","en","buzzword",3,"换成 dig into / look at，或者直接说「看看」"],
+["leverage","en","buzzword",3,"换成 use"],
+["utilize","en","buzzword",3,"换成 use"],
+["facilitate","en","buzzword",3,"换成 help"],
+["robust","en","buzzword",3,"具体说哪里好，别用万能形容词"],
+["seamless","en","buzzword",3,"具体说怎么个顺法"],
+["cutting-edge","en","buzzword",3,"说具体技术或数字"],
+["state-of-the-art","en","buzzword",3,"说具体指标"],
+["game-changer","en","buzzword",3,"说改变了什么"],
+["realm","en","buzzword",3,"换成 field / area"],
+["navigate","en","buzzword",3,"除非真的在导航，换成 deal with"],
+["foster","en","buzzword",3,"换成 encourage / help"],
+["holistic","en","buzzword",3,"说清是哪几个方面的整体"],
+["paradigm","en","buzzword",3,"换成 model / way"],
+["tapestry","en","buzzword",3,"别织锦了，说人话"],
+["multifaceted","en","buzzword",3,"列举是哪几面"],
+["underscore","en","buzzword",3,"换成 show"],
+["pivotal","en","buzzword",3,"换成 key / important"],
+["crucial","en","buzzword",3,"换成 important，或说清为什么重要"],
+["elevate","en","buzzword",3,"换成 improve"],
+["unlock","en","buzzword",3,"换成 enable / open"],
+["unleash","en","buzzword",3,"收一收戏剧性"],
+["harness","en","buzzword",3,"换成 use"],
+["embark","en","buzzword",3,"换成 start"],
+["spearhead","en","buzzword",3,"换成 lead"],
+["bolster","en","buzzword",3,"换成 support / strengthen"],
+["synergy","en","buzzword",3,"说清谁和谁怎么配合"],
+["shed light on","en","buzzword",3,"换成 explain"],
+["testament","en","buzzword",3,"「a testament to」是重灾区，换成 shows"],
+["comprehensive","en","buzzword",2,"说清覆盖了什么"],
+["innovative","en","buzzword",2,"说清新在哪"],
+["significantly","en","buzzword",2,"给数字"],
+["effectively","en","buzzword",2,"给效果"],
+["numerous","en","buzzword",2,"给数字"],
+["various","en","buzzword",2,"列举几个"],
+["journey","en","buzzword",2,"除非真的在旅行"],
+["landscape","en","buzzword",2,"比喻用法是 AI 重灾区，换成 field"],
+["ever-evolving","en","buzzword",2,"删掉通常不影响意思"],
+["fast-paced","en","buzzword",2,"AI 开头标配，删掉"],
+["play a role","en","template",2,"换成具体动词"],
+["wide range of","en","template",2,"列举几个"],
+["in today's world","en","template",3,"AI 开场白第一名，整句删"],
+["moreover","en","connector",1.5,"换成 also，或者直接另起一句"],
+["furthermore","en","connector",1.5,"换成 also"],
+["in addition","en","connector",1.5,"换成 also / plus"],
+["consequently","en","connector",1.5,"换成 so"],
+["in conclusion","en","connector",1.5,"结论直接说结论"],
+["firstly","en","connector",1.5,"first 就够"],
+["it is important to note","en","template",2.5,"重要就直接讲，别预告"],
+["it is worth noting","en","template",2.5,"值得注意就直接讲"],
+["it goes without saying","en","template",2.5,"既然不用说，那就别说"],
+["赋能","zh","buzzword",3,"说清谁帮谁做了什么"],
+["抓手","zh","buzzword",3,"换成「切入点」或直接说做法"],
+["闭环","zh","buzzword",3,"说清流程怎么走"],
+["链路","zh","buzzword",3,"换成「流程/环节」"],
+["颗粒度","zh","buzzword",3,"换成「细致程度」"],
+["对齐","zh","buzzword",3,"换成「确认/统一」"],
+["拉通","zh","buzzword",3,"换成「一起沟通」"],
+["组合拳","zh","buzzword",3,"列举是哪几招"],
+["心智","zh","buzzword",3,"换成「印象/认知」"],
+["生态化反","zh","buzzword",3,"这个……祝好运"],
+["全方位","zh","buzzword",2.5,"列举是哪几个方面"],
+["多维度","zh","buzzword",2.5,"列举是哪几个维度"],
+["深层次","zh","buzzword",2.5,"说清深在哪"],
+["系统性","zh","buzzword",2,"说清包括哪些部分"],
+["沉淀","zh","buzzword",2,"换成「积累/总结」"],
+["打法","zh","buzzword",2,"换成「做法」"],
+["综上所述","zh","template",2.5,"直接说结论"],
+["总而言之","zh","template",2.5,"直接说结论"],
+["总的来说","zh","template",2,"直接说结论"],
+["由此可见","zh","template",2,"换成「所以」"],
+["毋庸置疑","zh","template",2.5,"真的无疑就不用强调"],
+["显而易见","zh","template",2.5,"明显就不用说"],
+["不难发现","zh","template",2,"换成「可以看到」或删掉"],
+["值得注意的是","zh","template",2.5,"值得注意就直接讲"],
+["众所周知","zh","template",2.5,"都知道就别说了"],
+["在某种程度上","zh","template",2,"哪种程度？说具体"],
+["在一定程度上","zh","template",2,"哪种程度？说具体"],
+["随着时代的","zh","template",2.5,"AI 开场白，整句删"],
+["不断发展","zh","template",1.5,"「随着…的不断发展」是重灾区"],
+["重要性不言而喻","zh","template",3,"不言自明就别言"],
+["首先","zh","connector",1,"一二三列太多像提纲"],
+["其次","zh","connector",1.5,"「首先其次」连用是 AI 八股"],
+["与此同时","zh","connector",1.5,"换成「同时」"],
+["此外","zh","connector",1,"偶尔用没问题，连用就有味"],
+["然而","zh","connector",1,"换成「但是/不过」更口语"],
+["不仅","zh","connector",1,"「不仅…而且…」连用注意"],
+["一方面","zh","connector",1.5,"「一方面…另一方面…」是八股"],
+["另一方面","zh","connector",1.5,"说人话：「再说」"],
+["notably","en","connector",1.5,"AI 爱用，人能不用就不用"],
+["importantly","en","connector",1.5,"重要就直接讲"],
+["indeed","en","connector",1,"AI 高频，口语里几乎不用"],
+["in the realm of","en","template",2.5,"换成 in"],
+["a testament to","en","template",3,"AI 重灾区，换成 shows"],
+["plays a crucial role","en","template",3,"换成具体动词"],
+["it is essential","en","template",2,"直接说 must / need"],
+["in recent years","en","template",1.5,"AI 开场标配之一"],
+["has become increasingly","en","template",2,"给数据，别空喊 increasingly"],
+["delve into","en","buzzword",3,"换成 look into"],
+["打造","zh","buzzword",1.5,"「打造平台/生态」连用是重灾区"],
+["助力","zh","buzzword",1.5,"换成「帮助」"],
+["聚焦","zh","buzzword",1.5,"换成「关注」"],
+["深耕","zh","buzzword",2,"换成「长期做」"],
+["落地","zh","buzzword",1.5,"换成「实施/用起来」"],
+["赛道","zh","buzzword",2,"换成「领域」"],
+["新征程","zh","template",2.5,"AI 公文腔"],
+["谱写","zh","template",2,"「谱写新篇章」是 AI 公文标配"],
+["绘就","zh","template",2,"「绘就蓝图」同理"],
+["迈向","zh","template",1.5,"「迈向新时代」连用注意"],
+["大背景下","zh","template",2,"「在…大背景下」是 AI 开场白，删掉直接入题"],
+["引发了广泛关注","zh","template",2.5,"谁关注？说具体"],
+["成为了人们关注的焦点","zh","template",2.5,"同上"],
+["带来了前所未有的","zh","template",2.5,"「前所未有」先证明"],
 ["深刻改变","zh","template",2,"说清改变了什么"],
 ];
 
-const MIN_UNITS = 30;
-const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const MIN_UNITS=30, OPEN_WINDOW=60, OPEN_BONUS=0.5;
+const MAX_CLICHE=55, MAX_UNIFORM=25, MAX_CONNECTOR=12, MAX_PATTERN=10, MAX_HUMAN=20;
+const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const round1=x=>Math.round(x*10)/10;
 
 function countUnits(t){
-  const en = (t.match(/[A-Za-z]+(?:[-'][A-Za-z]+)*/g)||[]).length;
-  const zh = (t.match(/[一-鿿]/g)||[]).length;
-  return en+zh;
+  return ((t.match(/[A-Za-z]+(?:[-'][A-Za-z]+)*/g)||[]).length
+        + (t.match(/[一-鿿]/g)||[]).length);
+}
+function splitSentences(t){
+  return t.split(/[.!?。！？]+/).map(s=>s.trim()).filter(s=>countUnits(s)>=1);
 }
 function findHits(t){
-  const lower = t.toLowerCase(); const hits=[];
+  const lower=t.toLowerCase(); const hits=[];
   for(const c of CLICHES){
-    let count=0;
-    if(c[1]==="en") count=(lower.match(new RegExp("\\b"+escapeRe(c[0])+"\\b","g"))||[]).length;
-    else count=t.split(c[0]).length-1;
-    if(count) hits.push({c:c,count:count});
+    const re = c[1]==="en" ? new RegExp("\\b"+escapeRe(c[0])+"\\b","g")
+                          : new RegExp(escapeRe(c[0]),"g");
+    const src = c[1]==="en" ? lower : t;
+    let m, count=0, opening=0;
+    while((m=re.exec(src))!==null){
+      count++;
+      if(c[2]==="template" && countUnits(t.slice(0,m.index))<OPEN_WINDOW) opening++;
+    }
+    if(count) hits.push({c:c,count:count,opening:opening});
   }
   hits.sort((a,b)=>b.c[3]*b.count-a.c[3]*a.count);
   return hits;
 }
-function sentenceLengths(t){
-  return t.split(/[.!?。！？；;]+/).map(s=>countUnits(s)).filter(u=>u>=3);
+function uniformityPoints(t){
+  const lens=splitSentences(t).map(countUnits).filter(u=>u>=3);
+  if(lens.length<4) return [0,-1];
+  const mean=lens.reduce((a,b)=>a+b,0)/lens.length;
+  if(mean===0) return [0,-1];
+  const sd=Math.sqrt(lens.reduce((s,x)=>s+(x-mean)*(x-mean),0)/lens.length);
+  const cv=sd/mean;
+  return [MAX_UNIFORM*Math.max(0,1-cv/0.65), cv];
 }
-function verdict(score){
-  if(score<20)return["人味十足","#059669"];
-  if(score<40)return["略有 AI 嫌疑","#059669"];
-  if(score<60)return["AI 味明显","#d97706"];
-  if(score<80)return["AI 浓度超标","#e11d48"];
-  return["铁 AI，建议回炉重写","#e11d48"];
+function starterRepetition(t){
+  const sents=splitSentences(t).filter(s=>countUnits(s)>=3);
+  if(sents.length<4) return [0,"",0];
+  const starters=[];
+  for(const s of sents){
+    const m=s.match(/^[A-Za-z]+(?:[-'][A-Za-z]+)*/);
+    if(m){ starters.push(m[0].toLowerCase()); continue; }
+    const zh=s.match(/[一-鿿]/g);
+    if(zh && zh.length>=2) starters.push(zh.slice(0,2).join(""));
+  }
+  if(!starters.length) return [0,"",0];
+  const freq={}; let top="",n=0;
+  for(const st of starters){
+    freq[st]=(freq[st]||0)+1;
+    if(freq[st]>n){n=freq[st];top=st;}
+  }
+  if(n>=3) return [Math.min(6,(n-2)*2),top,n];
+  return [0,top,n];
 }
-// ---- 人味信号（减分项，最多 -20 分，与 Python 版 human_signals.py 一致）----
+// ---- 人味信号（减分项）----
 const ZH_COLLOQUIAL=["真的","感觉","好家伙","笑死","绷不住","破防","无语","绝了","yyds","绝绝子","牛逼","贼","巨","超","寄","摆烂","摸鱼","干饭","早八","抢课","食堂","宿舍","室友","阿姨"];
 const EN_INFORMAL=["gonna","wanna","kinda","sorta","lol","lmao","tbh","imo","ngl","btw","stuff","yeah","nah","ok","okay"];
 function humanPoints(t){
-  let pts=0;const sigs=[];
-  const add=(kind,detail,count,w,cap)=>{if(count>0){const p=Math.round(Math.min(count,cap)*w*10)/10;pts+=p;sigs.push(kind+" ×"+count+"（-"+p+" 分）");}};
-  const particles=(t.match(/[吧呢呗嘛啦哦嗯][，。！？!?,.\s]/g)||[]);
-  add("中文语气词","",particles.length,1.5,6);
-  const zhHits=ZH_COLLOQUIAL.filter(w=>t.includes(w));
-  add("中文口语/网络用语","",zhHits.length,2,5);
-  const contractions=(t.match(/\b\w+(?:n't|'m|'re|'ve|'ll|'d)\b/gi)||[]);
-  add("英文缩略形式","",contractions.length,1,6);
+  let pts=0; const sigs=[];
+  const add=(kind,count,w,cap)=>{
+    if(count<=0) return;
+    const p=round1(Math.min(count,cap)*w);
+    pts+=p; sigs.push({kind:kind,count:count,points:p});
+  };
+  add("中文语气词",(t.match(/[吧呢呗嘛啦哦嗯][，。！？!?,.\s]/g)||[]).length,1.5,6);
+  add("中文口语/网络用语",ZH_COLLOQUIAL.filter(w=>t.includes(w)).length,2,5);
+  add("英文缩略形式",(t.match(/\b\w+(?:n't|'m|'re|'ve|'ll|'d)\b/gi)||[]).length,1,6);
   const lower=t.toLowerCase();
-  const enHits=EN_INFORMAL.filter(w=>new RegExp("\\b"+escapeRe(w)+"\\b","i").test(lower));
-  add("英文口语","",enHits.length,2,4);
-  const emojis=(t.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu)||[]);
-  add("emoji","",emojis.length,1.5,5);
-  const ellipsis=(t.match(/……|\.\.\./g)||[]);
-  add("省略号","",ellipsis.length,1.5,3);
-  const exclaims=(t.match(/[！!]/g)||[]);
-  add("感叹号","",exclaims.length,0.5,6);
-  return{points:Math.min(20,Math.round(pts*10)/10),sigs:sigs};
+  add("英文口语",EN_INFORMAL.filter(w=>new RegExp("\\b"+escapeRe(w)+"\\b","i").test(lower)).length,2,4);
+  add("emoji",(t.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu)||[]).length,1.5,5);
+  add("省略号",(t.match(/……|\.\.\./g)||[]).length,1.5,3);
+  add("感叹号",(t.match(/[！!]/g)||[]).length,0.5,6);
+  add("问句",(t.match(/[？?]/g)||[]).length,0.5,3);
+  add("破折号/波浪号",(t.match(/——|[—~～]/g)||[]).length,1,3);
+  add("短句",splitSentences(t).filter(s=>countUnits(s)>=1&&countUnits(s)<=6).length,1,4);
+  return {points:Math.min(MAX_HUMAN,round1(pts)),sigs:sigs};
+}
+function verdict(score){
+  if(score<20) return ["人味十足","这文字一看就是活人写的"];
+  if(score<40) return ["略有 AI 嫌疑","有几处可疑，但总体像人写的"];
+  if(score<60) return ["AI 味明显","不少地方透着机器腔，建议逐条改"];
+  if(score<80) return ["AI 浓度超标","大词套话成堆，人味儿快没了"];
+  return ["铁 AI，建议回炉重写","从头到脚都是套路，重写比改快"];
+}
+function stampText(score){
+  if(score<20) return "人味\n十足";
+  if(score<40) return "略有\n嫌疑";
+  if(score<60) return "AI 味\n明显";
+  if(score<80) return "浓度\n超标";
+  return "铁 AI";
 }
 function analyze(text){
+  text=(text||"").trim();
   const units=countUnits(text);
-  if(units<MIN_UNITS)return{tooShort:true};
+  if(units<MIN_UNITS) return {tooShort:true,units:units};
   const hits=findHits(text);
-  const cw=hits.filter(h=>h.c[2]!=="connector").reduce((s,h)=>s+h.c[3]*h.count,0);
-  const cn=hits.filter(h=>h.c[2]==="connector").reduce((s,h)=>s+h.count,0);
-  const clichePts=Math.min(55,cw/units*100*14);
-  const connPts=Math.min(12,cn/units*100*6);
-  const lens=sentenceLengths(text);
-  let uniPts=0;
-  if(lens.length>=4){
-    const mean=lens.reduce((a,b)=>a+b,0)/lens.length;
-    const sd=Math.sqrt(lens.reduce((s,x)=>s+(x-mean)**2,0)/lens.length);
-    const cv=sd/mean;
-    uniPts=25*Math.max(0,1-cv/0.65);
+  let clicheWeighted=0, connectorCount=0, openingCount=0;
+  for(const h of hits){
+    if(h.c[2]==="connector"){ connectorCount+=h.count; continue; }
+    clicheWeighted += h.c[3]*h.count + h.c[3]*h.opening*OPEN_BONUS;
+    openingCount += h.opening;
   }
+  const clichePts=Math.min(MAX_CLICHE, clicheWeighted/units*100*14);
+  const connPts=Math.min(MAX_CONNECTOR, connectorCount/units*100*6);
+  const u=uniformityPoints(text), uniPts=u[0], cv=u[1];
   let patPts=0;
-  if(((text.match(/^\s*(?:[-*•]|\d{1,2}[.、)）])\s/gm)||[]).length>=3)patPts+=4;
-  if(/首先[\s\S]{0,400}?其次[\s\S]{0,400}?(最后|再次)/.test(text)||
-     /first(ly)?\b[\s\S]{0,400}?\bsecond(ly)?\b[\s\S]{0,400}?\b(finally|third(ly)?)\b/i.test(text))patPts+=4;
+  if((text.match(/^\s*(?:[-*•]|\d{1,2}[.、)）])\s/gm)||[]).length>=3) patPts+=4;
+  if(/首先[\s\S]{0,400}?其次[\s\S]{0,400}?(最后|再次)/.test(text)
+  || /first(ly)?\b[\s\S]{0,400}?\bsecond(ly)?\b[\s\S]{0,400}?\b(finally|third(ly)?)\b/i.test(text)) patPts+=4;
+  const st=starterRepetition(text), starterPts=st[0], starter=st[1];
+  patPts=Math.min(MAX_PATTERN, patPts+starterPts);
   const human=humanPoints(text);
-  const score=Math.min(100,Math.max(0,Math.round((clichePts+uniPts+connPts+patPts-human.points)*10)/10));
-  return{score,hits,units,clichePts,uniPts,connPts,patPts,humanPts:human.points,humanSigs:human.sigs};
+  const score=Math.min(100,Math.max(0,round1(clichePts+uniPts+connPts+patPts-human.points)));
+  return {
+    score:score, hits:hits, units:units,
+    clichePts:round1(clichePts), uniPts:round1(uniPts), cv:cv,
+    connPts:round1(connPts), patPts:round1(patPts),
+    starterPts:round1(starterPts), starter:starterPts>0?starter:"",
+    openingCount:openingCount,
+    humanPts:human.points, humanSigs:human.sigs,
+    hitCount:hits.reduce((s,h)=>s+h.count,0)
+  };
 }
+if (typeof module!=="undefined" && module.exports) module.exports={analyze:analyze};
+// ==ALGORITHM-END==
+
+if (typeof document!=="undefined"){
+const escapeHtml=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const $=id=>document.getElementById(id);
+
 function highlight(text,hits){
-  if(!hits.length)return escapeHtml(text);
-  const parts=hits.slice().sort((a,b)=>b.c[0].length-a.c[0].length)
-    .map(h=>h.c[1]==="en"?"\\b"+escapeRe(h.c[0])+"\\b":escapeRe(h.c[0]));
+  if(!hits.length) return escapeHtml(text);
+  const tips={};
+  const parts=hits.slice().sort((a,b)=>b.c[0].length-a.c[0].length).map(h=>{
+    tips[h.c[0].toLowerCase()]=h.c[4];
+    return h.c[1]==="en" ? "\\b"+escapeRe(h.c[0])+"\\b" : escapeRe(h.c[0]);
+  });
   const re=new RegExp("("+parts.join("|")+")","gi");
   let out="",last=0,m;
   while((m=re.exec(text))!==null){
-    out+=escapeHtml(text.slice(last,m.index))+"<mark>"+escapeHtml(m[0])+"</mark>";
+    const tip=tips[m[0].toLowerCase()]||"";
+    out+=escapeHtml(text.slice(last,m.index))
+        +'<u class="hit" data-tip="'+escapeHtml(m[0]+" → "+tip)+'">'+escapeHtml(m[0])+"</u>";
     last=m.index+m[0].length;
   }
   return out+escapeHtml(text.slice(last));
 }
-function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function repNumber(text){
+  let h=0;
+  for(let i=0;i<text.length;i++){ h=(h*31+text.charCodeAt(i))>>>0; }
+  return "№ "+h.toString(16).toUpperCase().padStart(8,"0").slice(0,6);
+}
+function bdRow(name,val,max,note,minus){
+  return '<div class="bd-row'+(minus?' minus':'')+'">'
+    +'<span class="name">'+name+'</span><span class="dots"></span>'
+    +'<span class="note">'+(note||"")+'</span>'
+    +'<span class="val">'+(minus?'-':'')+round1(val)+' / '+max+'</span></div>';
+}
+function render(text,r){
+  $("result").style.display="block";
+  $("repNo").textContent=repNumber(text);
+  $("repDate").textContent=new Date().toISOString().slice(0,10).replace(/-/g,".");
+  $("score").textContent=r.score;
+  const v=verdict(r.score);
+  $("verdict").textContent=v[0];
+  $("verdict").style.color = r.score<40 ? "var(--human)" : "var(--seal)";
+  $("verdictSub").textContent=v[1];
+  $("stamp").textContent=stampText(r.score).replace("\n","");
+  $("stamp").style.whiteSpace="pre-line";
 
+  let bd="";
+  bd+=bdRow("陈词滥调密度",r.clichePts,55,
+    r.openingCount?("命中 "+r.hitCount+" 处，含开场套路 ×"+r.openingCount):("命中 "+r.hitCount+" 处"));
+  bd+=bdRow("句长均匀度",r.uniPts,25,
+    r.cv>=0?("句长变异系数 "+r.cv.toFixed(2)):"句子太少，不评");
+  bd+=bdRow("八股连接词",r.connPts,12,"");
+  bd+=bdRow("套路结构",r.patPts,10,
+    r.starterPts?("含句首重复「"+r.starter+"」+"+r.starterPts):"");
+  bd+=bdRow("人味信号",r.humanPts,20,r.humanPts?"活人证据，减分":"",true);
+  $("breakdown").innerHTML=bd;
+
+  $("hl").innerHTML=highlight(text,r.hits);
+
+  const tips=r.hits.slice(0,6).map(h=>"<li>「<b>"+escapeHtml(h.c[0])+"</b>」→ "+escapeHtml(h.c[4])+"</li>");
+  $("tips").innerHTML=tips.join("")||"<li>没命中词库。分数若仍偏高，问题在句子和结构上——把长句拆碎，塞点只有你知道的细节。</li>";
+
+  if(r.humanSigs.length){
+    $("sigBlock").style.display="block";
+    $("sigs").innerHTML=r.humanSigs.map(s=>
+      '<div class="sig">'+escapeHtml(s.kind)+" ×"+s.count+"（减 "+s.points+" 分）</div>").join("");
+  }else{
+    $("sigBlock").style.display="none";
+  }
+}
 function run(){
-  const text=document.getElementById("input").value.trim();
-  const r=analyze(text);
-  const rc=document.getElementById("resultCard"),hc=document.getElementById("hlCard"),tc=document.getElementById("tipsCard");
-  if(r.tooShort){alert("文本太短，测不出来（至少来三五十个字）");return;}
-  rc.classList.remove("hidden");hc.classList.remove("hidden");tc.classList.remove("hidden");
-  document.getElementById("scoreText").textContent=r.score;
-  const off=364.4*(1-r.score/100);
-  const arc=document.getElementById("arc");
-  arc.style.transition="stroke-dashoffset .8s ease";arc.style.strokeDashoffset=off;
-  const[v,color]=verdict(r.score);
-  const vd=document.getElementById("verdict");vd.textContent=v;vd.style.color=color;
-  const set=(id,vv,max)=>{document.getElementById(id).style.width=(vv/max*100)+"%";
-    document.getElementById(id+"v").textContent=Math.round(vv*10)/10;};
-  set("bd1",r.clichePts,55);set("bd2",r.uniPts,25);set("bd3",r.connPts,12);set("bd4",r.patPts,8);
-  set("bd5",r.humanPts,20);
-  document.getElementById("bd5v").textContent="-"+r.humanPts;
-  document.getElementById("hl").innerHTML=highlight(text,r.hits);
-  const tips=r.hits.slice(0,5).map(h=>`<li>「<b>${escapeHtml(h.c[0])}</b>」→ ${escapeHtml(h.c[4])}</li>`);
-  if(r.humanSigs.length)tips.push(`<li style="color:#059669">检测到 ${r.humanSigs.length} 类人味信号（共 -${r.humanPts} 分）：${escapeHtml(r.humanSigs.join("，"))}</li>`);
-  document.getElementById("tips").innerHTML=tips.join("")||"<li>没有命中词库，文体层面再人工看看。</li>";
-  rc.scrollIntoView({behavior:"smooth",block:"nearest"});
+  const text=$("input").value.trim();
+  if(countUnits(text)<MIN_UNITS){
+    $("result").style.display="none";
+    return;
+  }
+  render(text,analyze(text));
+}
+let timer=null;
+$("input").addEventListener("input",()=>{
+  const n=countUnits($("input").value);
+  $("count").textContent="已输入 "+n+" 字（英文按词计）"+(n>0&&n<MIN_UNITS?"，再写点":"" );
+  clearTimeout(timer);
+  timer=setTimeout(run,300);
+});
+function clearAll(){
+  $("input").value="";
+  $("count").textContent="已输入 0 字（英文按词计）";
+  $("result").style.display="none";
+  $("input").focus();
 }
 const SAMPLES={
-ai:"综上所述，随着时代的不断发展，人工智能正在全方位赋能各行各业。首先，它为组织提供了新的抓手，帮助企业打通业务链路。其次，通过多维度的系统性打法，可以形成完整的商业闭环。值得注意的是，这种变革的重要性不言而喻。与此同时，我们也应当看到其在一定程度上带来的深层次影响。总而言之，只有积极拥抱变化，才能在未来的竞争中立于不败之地。",
-human:"今天中午食堂的糖醋排骨又涨价了，气死。不过打饭阿姨手没抖，给了我四大块，行吧，原谅她了。下午实验课困得要命，昨晚熬夜赶报告，三点多才睡，还好同桌带了风油精，往太阳穴一抹，直接清醒。回宿舍路上下雨了，我没带伞，一路小跑，鞋全湿。晚上本来想看两集剧，结果躺床上五分钟就睡着了。明天早八，闹钟定了三个，希望能起得来。"
+ai:"综上所述，随着时代的不断发展，人工智能正在全方位赋能各行各业。首先，它为组织提供了新的抓手，帮助企业打通业务链路。其次，通过多维度的系统性打法，可以形成完整的商业闭环。值得注意的是，这种变革的重要性不言而喻。与此同时，我们也应当看到其在一定程度上带来的深层次影响。总而言之，只有积极拥抱变化，才能在新征程上立于不败之地。",
+human:"今天中午食堂的糖醋排骨又涨价了，气死。不过打饭阿姨手没抖，给了我四大块，行吧，原谅她了。下午实验课困得要命，昨晚熬夜赶报告，三点多才睡——还好同桌带了风油精，往太阳穴一抹，直接清醒。回宿舍路上下雨了，我没带伞，一路小跑，鞋全湿。明天早八，闹钟定了三个，你说我能起得来吗？"
 };
-function loadSample(k){document.getElementById("input").value=SAMPLES[k];run();}
+function loadSample(k){
+  $("input").value=SAMPLES[k];
+  $("input").dispatchEvent(new Event("input"));
+  run();
+}
+}
 </script>
 </body>
 </html>

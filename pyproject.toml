@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-flavor-detector"
-version = "0.1.0"
+version = "0.3.0"
 description = "AI 味检测器：给你的文字打个「AI 浓度分」，把 AI 陈词滥调统统标红"
 readme = "README.md"
 requires-python = ">=3.9"
