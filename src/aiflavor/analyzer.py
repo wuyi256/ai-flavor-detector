@@ -1,10 +1,14 @@
-"""核心分析逻辑：词库命中 + 文体均匀度 + 八股结构 -> 0~100 的「AI 味浓度分」。
+"""核心分析逻辑：AI 信号加分 + 人味信号减分 -> 0~100 的「AI 味浓度分」。
 
-评分由四部分组成（总分封顶 100）：
+AI 信号（加分项，合计封顶 100）：
 1. 陈词滥调密度（最高 55 分）：命中词库词条的加权次数 / 文本长度
 2. 句长均匀度（最高 25 分）：AI 句长往往整齐划一，人写的参差不齐
 3. 八股连接词密度（最高 12 分）：moreover / furthermore / 首先其次 的滥用
 4. 套路结构（最高 8 分）：「首先…其次…最后」链条、连续列表符
+
+人味信号（减分项，合计最多减 20 分）：
+口语助词、网络用语、emoji、省略号、感叹号、英文缩略形式等 AI 很少用的东西。
+见 human_signals.py。
 """
 from __future__ import annotations
 
@@ -13,6 +17,7 @@ import statistics
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
+from .human_signals import HumanSignal, compute_human_points
 from .lexicon import CLICHES, Cliche
 
 _EN_WORD_RE = re.compile(r"[A-Za-z]+(?:[-'][A-Za-z]+)*")
@@ -38,6 +43,7 @@ class Analysis:
     hits: List[Hit] = field(default_factory=list)
     stats: Dict[str, float] = field(default_factory=dict)
     suggestions: List[Tuple[str, str]] = field(default_factory=list)
+    human_signals: List[HumanSignal] = field(default_factory=list)
     too_short: bool = False
 
 
@@ -121,8 +127,9 @@ def analyze(text: str) -> Analysis:
     if _ZH_CHAIN_RE.search(text) or _EN_CHAIN_RE.search(text):
         pattern_pts += 4.0
 
-    score = min(100.0, cliche_pts + uniform_pts + connector_pts + pattern_pts)
-    score = round(score, 1)
+    score_raw = cliche_pts + uniform_pts + connector_pts + pattern_pts
+    human_pts, human_signals = compute_human_points(text)
+    score = round(min(100.0, max(0.0, score_raw - human_pts)), 1)
 
     suggestions = [(h.cliche.pattern, h.cliche.suggestion) for h in hits[:5]]
 
@@ -137,7 +144,9 @@ def analyze(text: str) -> Analysis:
             "sentence_cv": round(cv, 3),
             "connector_points": round(connector_pts, 1),
             "pattern_points": round(pattern_pts, 1),
+            "human_points": human_pts,
             "hit_count": sum(h.count for h in hits),
         },
         suggestions=suggestions,
+        human_signals=human_signals,
     )

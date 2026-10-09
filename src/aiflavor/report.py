@@ -63,10 +63,16 @@ def render_terminal(analysis: Analysis, text: str, color: bool = True) -> str:
     lines.append(c(_DIM) + f"字数 {s['units']} | 命中 {s['hit_count']} 处 | "
                  f"大词 {s['cliche_points']} 分 | 句长均匀 {s['uniformity_points']} 分"
                  f" | 八股连接词 {s['connector_points']} 分 | 套路结构 {s['pattern_points']} 分"
+                 f" | 人味信号 -{s['human_points']} 分"
                  + c(_RESET))
     lines.append("")
     lines.append(c(_BOLD) + "---- 原文（标红 = AI 高频词）----" + c(_RESET))
     lines.append(highlight_text(text, analysis, color=color))
+    if analysis.human_signals:
+        lines.append("")
+        lines.append(c(_BOLD) + "---- 人味信号（减分依据）----" + c(_RESET))
+        for sig in analysis.human_signals:
+            lines.append(f"  • {sig.kind} ×{sig.count}（-{sig.points} 分）  例：{sig.detail}")
     if analysis.suggestions:
         lines.append("")
         lines.append(c(_BOLD) + "---- 去味建议 ----" + c(_RESET))
@@ -95,5 +101,9 @@ def to_json_dict(analysis: Analysis) -> dict:
         ],
         "suggestions": [
             {"pattern": p, "suggestion": s} for p, s in analysis.suggestions
+        ],
+        "human_signals": [
+            {"kind": s.kind, "detail": s.detail, "count": s.count, "points": s.points}
+            for s in analysis.human_signals
         ],
     }

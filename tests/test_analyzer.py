@@ -79,6 +79,34 @@ class TestAnalyze(unittest.TestCase):
         self.assertTrue(a.suggestions)
         self.assertTrue(all(len(s) == 2 for s in a.suggestions))
 
+    def test_human_signals_lower_score(self):
+        casual = (
+            "在吗在吗！明天抢课帮我留意下呗，我怕我起不来……闹钟定了仨了还是慌。"
+            "对了上次说的那个香锅，就西门那家，周末去不去？我室友说巨好吃。"
+            "哈哈哈哈行，那就周六中午，谁迟到谁请客啊！"
+        )
+        a = analyze(casual)
+        self.assertGreater(a.stats["human_points"], 0, "口语文本应触发人味信号")
+        self.assertTrue(a.human_signals)
+        self.assertLessEqual(a.score, 20.0)
+
+    def test_benchmark_separation(self):
+        """基准集上 AI 与人类文本必须拉开差距（准确率 100% @ 阈值 40）。"""
+        import os
+        import sys
+
+        sys.path.insert(
+            0,
+            os.path.join(os.path.dirname(__file__), "..", "benchmark"),
+        )
+        from samples import AI_SAMPLES, HUMAN_SAMPLES  # noqa
+
+        ai_scores = [analyze(t).score for t in AI_SAMPLES]
+        human_scores = [analyze(t).score for t in HUMAN_SAMPLES]
+        self.assertTrue(all(s >= 40.0 for s in ai_scores), f"AI 分数偏低: {ai_scores}")
+        self.assertTrue(all(s < 40.0 for s in human_scores), f"人类分数偏高: {human_scores}")
+        self.assertGreater(min(ai_scores) - max(human_scores), 20.0)
+
 
 if __name__ == "__main__":
     unittest.main()

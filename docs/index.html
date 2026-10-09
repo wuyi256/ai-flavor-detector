@@ -77,6 +77,7 @@
         <div class="bd-row"><span>句长均匀</span><div class="bd-track"><div class="bd-fill" id="bd2"></div></div><span id="bd2v"></span></div>
         <div class="bd-row"><span>八股连接词</span><div class="bd-track"><div class="bd-fill" id="bd3"></div></div><span id="bd3v"></span></div>
         <div class="bd-row"><span>套路结构</span><div class="bd-track"><div class="bd-fill" id="bd4"></div></div><span id="bd4v"></span></div>
+        <div class="bd-row"><span>人味信号</span><div class="bd-track"><div class="bd-fill" id="bd5" style="background:linear-gradient(90deg,#059669,#34d399)"></div></div><span id="bd5v"></span></div>
       </div>
     </div>
   </div>
@@ -146,6 +147,19 @@ const CLICHES = [
 ["与此同时","zh","connector",1.5,"换成「同时」"],["此外","zh","connector",1,"连用有味"],
 ["然而","zh","connector",1,"换成「但是」"],["不仅","zh","connector",1,"注意连用"],
 ["一方面","zh","connector",1.5,"八股"],["另一方面","zh","connector",1.5,"说人话：「再说」"],
+["notably","en","connector",1.5,"AI 爱用"],["importantly","en","connector",1.5,"直接讲"],
+["indeed","en","connector",1,"口语里几乎不用"],["in the realm of","en","template",2.5,"换成 in"],
+["a testament to","en","template",3,"换成 shows"],["plays a crucial role","en","template",3,"换具体动词"],
+["it is essential","en","template",2,"直接说 must"],["in recent years","en","template",1.5,"AI 开场标配"],
+["has become increasingly","en","template",2,"给数据"],["delve into","en","buzzword",3,"换成 look into"],
+["打造","zh","buzzword",1.5,"连用是重灾区"],["助力","zh","buzzword",1.5,"换成「帮助」"],
+["聚焦","zh","buzzword",1.5,"换成「关注」"],["深耕","zh","buzzword",2,"换成「长期做」"],
+["落地","zh","buzzword",1.5,"换成「用起来」"],["赛道","zh","buzzword",2,"换成「领域」"],
+["新征程","zh","template",2.5,"AI 公文腔"],["谱写","zh","template",2,"公文标配"],
+["绘就","zh","template",2,"同理"],["迈向","zh","template",1.5,"连用注意"],
+["大背景下","zh","template",2,"AI 开场白"],["引发了广泛关注","zh","template",2.5,"谁关注？"],
+["成为了人们关注的焦点","zh","template",2.5,"同上"],["带来了前所未有的","zh","template",2.5,"先证明"],
+["深刻改变","zh","template",2,"说清改变了什么"],
 ];
 
 const MIN_UNITS = 30;
@@ -177,6 +191,29 @@ function verdict(score){
   if(score<80)return["AI 浓度超标","#e11d48"];
   return["铁 AI，建议回炉重写","#e11d48"];
 }
+// ---- 人味信号（减分项，最多 -20 分，与 Python 版 human_signals.py 一致）----
+const ZH_COLLOQUIAL=["真的","感觉","好家伙","笑死","绷不住","破防","无语","绝了","yyds","绝绝子","牛逼","贼","巨","超","寄","摆烂","摸鱼","干饭","早八","抢课","食堂","宿舍","室友","阿姨"];
+const EN_INFORMAL=["gonna","wanna","kinda","sorta","lol","lmao","tbh","imo","ngl","btw","stuff","yeah","nah","ok","okay"];
+function humanPoints(t){
+  let pts=0;const sigs=[];
+  const add=(kind,detail,count,w,cap)=>{if(count>0){const p=Math.round(Math.min(count,cap)*w*10)/10;pts+=p;sigs.push(kind+" ×"+count+"（-"+p+" 分）");}};
+  const particles=(t.match(/[吧呢呗嘛啦哦嗯][，。！？!?,.\s]/g)||[]);
+  add("中文语气词","",particles.length,1.5,6);
+  const zhHits=ZH_COLLOQUIAL.filter(w=>t.includes(w));
+  add("中文口语/网络用语","",zhHits.length,2,5);
+  const contractions=(t.match(/\b\w+(?:n't|'m|'re|'ve|'ll|'d)\b/gi)||[]);
+  add("英文缩略形式","",contractions.length,1,6);
+  const lower=t.toLowerCase();
+  const enHits=EN_INFORMAL.filter(w=>new RegExp("\\b"+escapeRe(w)+"\\b","i").test(lower));
+  add("英文口语","",enHits.length,2,4);
+  const emojis=(t.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu)||[]);
+  add("emoji","",emojis.length,1.5,5);
+  const ellipsis=(t.match(/……|\.\.\./g)||[]);
+  add("省略号","",ellipsis.length,1.5,3);
+  const exclaims=(t.match(/[！!]/g)||[]);
+  add("感叹号","",exclaims.length,0.5,6);
+  return{points:Math.min(20,Math.round(pts*10)/10),sigs:sigs};
+}
 function analyze(text){
   const units=countUnits(text);
   if(units<MIN_UNITS)return{tooShort:true};
@@ -197,8 +234,9 @@ function analyze(text){
   if(((text.match(/^\s*(?:[-*•]|\d{1,2}[.、)）])\s/gm)||[]).length>=3)patPts+=4;
   if(/首先[\s\S]{0,400}?其次[\s\S]{0,400}?(最后|再次)/.test(text)||
      /first(ly)?\b[\s\S]{0,400}?\bsecond(ly)?\b[\s\S]{0,400}?\b(finally|third(ly)?)\b/i.test(text))patPts+=4;
-  const score=Math.min(100,Math.round((clichePts+uniPts+connPts+patPts)*10)/10);
-  return{score,hits,units,clichePts,uniPts,connPts,patPts};
+  const human=humanPoints(text);
+  const score=Math.min(100,Math.max(0,Math.round((clichePts+uniPts+connPts+patPts-human.points)*10)/10));
+  return{score,hits,units,clichePts,uniPts,connPts,patPts,humanPts:human.points,humanSigs:human.sigs};
 }
 function highlight(text,hits){
   if(!hits.length)return escapeHtml(text);
@@ -229,8 +267,11 @@ function run(){
   const set=(id,vv,max)=>{document.getElementById(id).style.width=(vv/max*100)+"%";
     document.getElementById(id+"v").textContent=Math.round(vv*10)/10;};
   set("bd1",r.clichePts,55);set("bd2",r.uniPts,25);set("bd3",r.connPts,12);set("bd4",r.patPts,8);
+  set("bd5",r.humanPts,20);
+  document.getElementById("bd5v").textContent="-"+r.humanPts;
   document.getElementById("hl").innerHTML=highlight(text,r.hits);
   const tips=r.hits.slice(0,5).map(h=>`<li>「<b>${escapeHtml(h.c[0])}</b>」→ ${escapeHtml(h.c[4])}</li>`);
+  if(r.humanSigs.length)tips.push(`<li style="color:#059669">检测到 ${r.humanSigs.length} 类人味信号（共 -${r.humanPts} 分）：${escapeHtml(r.humanSigs.join("，"))}</li>`);
   document.getElementById("tips").innerHTML=tips.join("")||"<li>没有命中词库，文体层面再人工看看。</li>";
   rc.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
