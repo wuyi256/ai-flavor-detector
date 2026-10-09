@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 味检测器</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
+    --accent:#6366f1; --accent2:#8b5cf6; --red:#e11d48; --green:#059669; --amber:#d97706;
+    --border:#e5e7eb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;line-height:1.7}
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 64px}
+  header{text-align:center;margin-bottom:28px}
+  header h1{font-size:32px;background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{color:var(--muted);margin-top:6px;font-size:14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,20,60,.05)}
+  textarea{width:100%;min-height:170px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:15px;font-family:inherit;resize:vertical;line-height:1.7}
+  textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+  .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  button{border:none;border-radius:10px;padding:10px 22px;font-size:15px;cursor:pointer;font-family:inherit}
+  .btn-primary{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;font-weight:600}
+  .btn-ghost{background:#eef0f6;color:var(--ink)}
+  .btn-ghost:hover{background:#e3e6f0}
+  .score-zone{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .gauge{flex:0 0 auto}
+  .gauge .num{font-size:34px;font-weight:700}
+  .verdict{font-size:20px;font-weight:700;margin-top:2px}
+  .breakdown{flex:1;min-width:260px}
+  .bd-row{display:grid;grid-template-columns:110px 1fr 46px;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin:6px 0}
+  .bd-track{background:#eef0f6;border-radius:6px;height:10px;overflow:hidden}
+  .bd-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .hl{line-height:2;font-size:15px;white-space:pre-wrap;word-break:break-word}
+  .hl mark{background:#ffe4e6;color:var(--red);border-radius:4px;padding:0 2px;font-weight:600}
+  .tips li{margin:6px 0 6px 18px;font-size:14px}
+  .hidden{display:none}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+  footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI 味检测器</h1>
+    <p>给文字打个「AI 浓度分」· 中英文都支持 · 全部计算在浏览器本地完成，文字不出本机</p>
+  </header>
+
+  <div class="card">
+    <textarea id="input" placeholder="把要检测的文字贴进来（至少三五十个字）……"></textarea>
+    <div class="row">
+      <button class="btn-primary" onclick="run()">开始检测</button>
+      <button class="btn-ghost" onclick="loadSample('ai')">来段 AI 范文</button>
+      <button class="btn-ghost" onclick="loadSample('human')">来段人话</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <div class="score-zone">
+      <div class="gauge">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="58" fill="none" stroke="#eef0f6" stroke-width="12"/>
+          <circle id="arc" cx="70" cy="70" r="58" fill="none" stroke="url(#g)" stroke-width="12"
+                  stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"
+                  transform="rotate(-90 70 70)"/>
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient></defs>
+          <text id="scoreText" x="70" y="66" text-anchor="middle" class="num" fill="#1f2430" font-size="34" font-weight="700">0</text>
+          <text x="70" y="90" text-anchor="middle" fill="#6b7280" font-size="12">/ 100</text>
+        </svg>
+      </div>
+      <div class="breakdown">
+        <div class="verdict" id="verdict"></div>
+        <div class="bd-row"><span>陈词滥调</span><div class="bd-track"><div class="bd-fill" id="bd1"></div></div><span id="bd1v"></span></div>
+        <div class="bd-row"><span>句长均匀</span><div class="bd-track"><div class="bd-fill" id="bd2"></div></div><span id="bd2v"></span></div>
+        <div class="bd-row"><span>八股连接词</span><div class="bd-track"><div class="bd-fill" id="bd3"></div></div><span id="bd3v"></span></div>
+        <div class="bd-row"><span>套路结构</span><div class="bd-track"><div class="bd-fill" id="bd4"></div></div><span id="bd4v"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="hlCard">
+    <b>原文高亮</b>（标红 = AI 高频词）
+    <div class="hl" id="hl" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card hidden" id="tipsCard">
+    <b>去味建议</b>
+    <ul class="tips" id="tips"></ul>
+  </div>
+
+  <footer>
+    词库与评分算法开源：<a href="https://github.com/wuyi256/ai-flavor-detector">github.com/wuyi256/ai-flavor-detector</a>
+  </footer>
+</div>
+
+<script>
+// ---- 词库（与 Python 版 src/aiflavor/lexicon.py 保持一致）----
+// [pattern, lang, category, weight, suggestion]
+const CLICHES = [
+["delve","en","buzzword",3,"换成 dig into / look at"],["leverage","en","buzzword",3,"换成 use"],
+["utilize","en","buzzword",3,"换成 use"],["facilitate","en","buzzword",3,"换成 help"],
+["robust","en","buzzword",3,"具体说哪里好"],["seamless","en","buzzword",3,"具体说怎么顺"],
+["cutting-edge","en","buzzword",3,"说具体技术"],["state-of-the-art","en","buzzword",3,"说具体指标"],
+["game-changer","en","buzzword",3,"说改变了什么"],["realm","en","buzzword",3,"换成 field"],
+["navigate","en","buzzword",3,"换成 deal with"],["foster","en","buzzword",3,"换成 encourage"],
+["holistic","en","buzzword",3,"说清哪几个方面"],["paradigm","en","buzzword",3,"换成 model"],
+["tapestry","en","buzzword",3,"说人话"],["multifaceted","en","buzzword",3,"列举是哪几面"],
+["underscore","en","buzzword",3,"换成 show"],["pivotal","en","buzzword",3,"换成 key"],
+["crucial","en","buzzword",3,"换成 important"],["elevate","en","buzzword",3,"换成 improve"],
+["unlock","en","buzzword",3,"换成 enable"],["unleash","en","buzzword",3,"收一收戏剧性"],
+["harness","en","buzzword",3,"换成 use"],["embark","en","buzzword",3,"换成 start"],
+["spearhead","en","buzzword",3,"换成 lead"],["bolster","en","buzzword",3,"换成 support"],
+["synergy","en","buzzword",3,"说清谁和谁配合"],["shed light on","en","buzzword",3,"换成 explain"],
+["testament","en","buzzword",3,"换成 shows"],
+["comprehensive","en","buzzword",2,"说清覆盖什么"],["innovative","en","buzzword",2,"说清新在哪"],
+["significantly","en","buzzword",2,"给数字"],["effectively","en","buzzword",2,"给效果"],
+["numerous","en","buzzword",2,"给数字"],["various","en","buzzword",2,"列举几个"],
+["journey","en","buzzword",2,"除非真在旅行"],["landscape","en","buzzword",2,"换成 field"],
+["ever-evolving","en","buzzword",2,"删掉"],["fast-paced","en","buzzword",2,"AI 开头标配"],
+["play a role","en","template",2,"换具体动词"],["wide range of","en","template",2,"列举几个"],
+["in today's world","en","template",3,"AI 开场白第一名"],
+["moreover","en","connector",1.5,"换成 also"],["furthermore","en","connector",1.5,"换成 also"],
+["in addition","en","connector",1.5,"换成 also"],["consequently","en","connector",1.5,"换成 so"],
+["in conclusion","en","connector",1.5,"直接说结论"],["firstly","en","connector",1.5,"first 就够"],
+["it is important to note","en","template",2.5,"别预告，直接讲"],
+["it is worth noting","en","template",2.5,"直接讲"],["it goes without saying","en","template",2.5,"那就别说"],
+["赋能","zh","buzzword",3,"说清谁帮谁做了什么"],["抓手","zh","buzzword",3,"换成「切入点」"],
+["闭环","zh","buzzword",3,"说清流程"],["链路","zh","buzzword",3,"换成「流程」"],
+["颗粒度","zh","buzzword",3,"换成「细致程度」"],["对齐","zh","buzzword",3,"换成「确认」"],
+["拉通","zh","buzzword",3,"换成「一起沟通」"],["组合拳","zh","buzzword",3,"列举哪几招"],
+["心智","zh","buzzword",3,"换成「印象」"],["生态化反","zh","buzzword",3,"祝好运"],
+["全方位","zh","buzzword",2.5,"列举哪几方面"],["多维度","zh","buzzword",2.5,"列举哪几维度"],
+["深层次","zh","buzzword",2.5,"说清深在哪"],["系统性","zh","buzzword",2,"说清哪些部分"],
+["沉淀","zh","buzzword",2,"换成「积累」"],["打法","zh","buzzword",2,"换成「做法」"],
+["综上所述","zh","template",2.5,"直接说结论"],["总而言之","zh","template",2.5,"直接说结论"],
+["总的来说","zh","template",2,"直接说结论"],["由此可见","zh","template",2,"换成「所以」"],
+["毋庸置疑","zh","template",2.5,"无疑就不用强调"],["显而易见","zh","template",2.5,"明显就不用说"],
+["不难发现","zh","template",2,"删掉"],["值得注意的是","zh","template",2.5,"直接讲"],
+["众所周知","zh","template",2.5,"都知道就别说"],["在某种程度上","zh","template",2,"哪种程度？"],
+["在一定程度上","zh","template",2,"哪种程度？"],["随着时代的","zh","template",2.5,"AI 开场白"],
+["不断发展","zh","template",1.5,"重灾区"],["重要性不言而喻","zh","template",3,"不言自明就别言"],
+["首先","zh","connector",1,"连用像提纲"],["其次","zh","connector",1.5,"AI 八股"],
+["与此同时","zh","connector",1.5,"换成「同时」"],["此外","zh","connector",1,"连用有味"],
+["然而","zh","connector",1,"换成「但是」"],["不仅","zh","connector",1,"注意连用"],
+["一方面","zh","connector",1.5,"八股"],["另一方面","zh","connector",1.5,"说人话：「再说」"],
+];
+
+const MIN_UNITS = 30;
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function countUnits(t){
+  const en = (t.match(/[A-Za-z]+(?:[-'][A-Za-z]+)*/g)||[]).length;
+  const zh = (t.match(/[一-鿿]/g)||[]).length;
+  return en+zh;
+}
+function findHits(t){
+  const lower = t.toLowerCase(); const hits=[];
+  for(const c of CLICHES){
+    let count=0;
+    if(c[1]==="en") count=(lower.match(new RegExp("\\b"+escapeRe(c[0])+"\\b","g"))||[]).length;
+    else count=t.split(c[0]).length-1;
+    if(count) hits.push({c:c,count:count});
+  }
+  hits.sort((a,b)=>b.c[3]*b.count-a.c[3]*a.count);
+  return hits;
+}
+function sentenceLengths(t){
+  return t.split(/[.!?。！？；;]+/).map(s=>countUnits(s)).filter(u=>u>=3);
+}
+function verdict(score){
+  if(score<20)return["人味十足","#059669"];
+  if(score<40)return["略有 AI 嫌疑","#059669"];
+  if(score<60)return["AI 味明显","#d97706"];
+  if(score<80)return["AI 浓度超标","#e11d48"];
+  return["铁 AI，建议回炉重写","#e11d48"];
+}
+function analyze(text){
+  const units=countUnits(text);
+  if(units<MIN_UNITS)return{tooShort:true};
+  const hits=findHits(text);
+  const cw=hits.filter(h=>h.c[2]!=="connector").reduce((s,h)=>s+h.c[3]*h.count,0);
+  const cn=hits.filter(h=>h.c[2]==="connector").reduce((s,h)=>s+h.count,0);
+  const clichePts=Math.min(55,cw/units*100*14);
+  const connPts=Math.min(12,cn/units*100*6);
+  const lens=sentenceLengths(text);
+  let uniPts=0;
+  if(lens.length>=4){
+    const mean=lens.reduce((a,b)=>a+b,0)/lens.length;
+    const sd=Math.sqrt(lens.reduce((s,x)=>s+(x-mean)**2,0)/lens.length);
+    const cv=sd/mean;
+    uniPts=25*Math.max(0,1-cv/0.65);
+  }
+  let patPts=0;
+  if(((text.match(/^\s*(?:[-*•]|\d{1,2}[.、)）])\s/gm)||[]).length>=3)patPts+=4;
+  if(/首先[\s\S]{0,400}?其次[\s\S]{0,400}?(最后|再次)/.test(text)||
+     /first(ly)?\b[\s\S]{0,400}?\bsecond(ly)?\b[\s\S]{0,400}?\b(finally|third(ly)?)\b/i.test(text))patPts+=4;
+  const score=Math.min(100,Math.round((clichePts+uniPts+connPts+patPts)*10)/10);
+  return{score,hits,units,clichePts,uniPts,connPts,patPts};
+}
+function highlight(text,hits){
+  if(!hits.length)return escapeHtml(text);
+  const parts=hits.slice().sort((a,b)=>b.c[0].length-a.c[0].length)
+    .map(h=>h.c[1]==="en"?"\\b"+escapeRe(h.c[0])+"\\b":escapeRe(h.c[0]));
+  const re=new RegExp("("+parts.join("|")+")","gi");
+  let out="",last=0,m;
+  while((m=re.exec(text))!==null){
+    out+=escapeHtml(text.slice(last,m.index))+"<mark>"+escapeHtml(m[0])+"</mark>";
+    last=m.index+m[0].length;
+  }
+  return out+escapeHtml(text.slice(last));
+}
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function run(){
+  const text=document.getElementById("input").value.trim();
+  const r=analyze(text);
+  const rc=document.getElementById("resultCard"),hc=document.getElementById("hlCard"),tc=document.getElementById("tipsCard");
+  if(r.tooShort){alert("文本太短，测不出来（至少来三五十个字）");return;}
+  rc.classList.remove("hidden");hc.classList.remove("hidden");tc.classList.remove("hidden");
+  document.getElementById("scoreText").textContent=r.score;
+  const off=364.4*(1-r.score/100);
+  const arc=document.getElementById("arc");
+  arc.style.transition="stroke-dashoffset .8s ease";arc.style.strokeDashoffset=off;
+  const[v,color]=verdict(r.score);
+  const vd=document.getElementById("verdict");vd.textContent=v;vd.style.color=color;
+  const set=(id,vv,max)=>{document.getElementById(id).style.width=(vv/max*100)+"%";
+    document.getElementById(id+"v").textContent=Math.round(vv*10)/10;};
+  set("bd1",r.clichePts,55);set("bd2",r.uniPts,25);set("bd3",r.connPts,12);set("bd4",r.patPts,8);
+  document.getElementById("hl").innerHTML=highlight(text,r.hits);
+  const tips=r.hits.slice(0,5).map(h=>`<li>「<b>${escapeHtml(h.c[0])}</b>」→ ${escapeHtml(h.c[4])}</li>`);
+  document.getElementById("tips").innerHTML=tips.join("")||"<li>没有命中词库，文体层面再人工看看。</li>";
+  rc.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+const SAMPLES={
+ai:"综上所述，随着时代的不断发展，人工智能正在全方位赋能各行各业。首先，它为组织提供了新的抓手，帮助企业打通业务链路。其次，通过多维度的系统性打法，可以形成完整的商业闭环。值得注意的是，这种变革的重要性不言而喻。与此同时，我们也应当看到其在一定程度上带来的深层次影响。总而言之，只有积极拥抱变化，才能在未来的竞争中立于不败之地。",
+human:"今天中午食堂的糖醋排骨又涨价了，气死。不过打饭阿姨手没抖，给了我四大块，行吧，原谅她了。下午实验课困得要命，昨晚熬夜赶报告，三点多才睡，还好同桌带了风油精，往太阳穴一抹，直接清醒。回宿舍路上下雨了，我没带伞，一路小跑，鞋全湿。晚上本来想看两集剧，结果躺床上五分钟就睡着了。明天早八，闹钟定了三个，希望能起得来。"
+};
+function loadSample(k){document.getElementById("input").value=SAMPLES[k];run();}
+</script>
+</body>
+</html>
